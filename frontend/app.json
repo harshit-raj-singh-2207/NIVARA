@@ -1,0 +1,97 @@
+{
+  "expo": {
+    "name": "Nivara",
+    "slug": "nivara",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "nivara",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f8fafc"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nivara.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Nivara needs your location to keep you safe and show you on the map.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Nivara uses background location to monitor safe zones and send alerts when you leave them.",
+        "NSLocationAlwaysUsageDescription": "Nivara uses background location to monitor safe zones and send alerts when you leave them.",
+        "NSBluetoothAlwaysUsageDescription": "Nivara connects to the GPS safety band via Bluetooth.",
+        "NSBluetoothPeripheralUsageDescription": "Nivara connects to the GPS safety band via Bluetooth.",
+        "NSCameraUsageDescription": "Nivara uses the camera for profile photos and posts.",
+        "NSPhotoLibraryUsageDescription": "Nivara accesses your photos for profile pictures and community posts.",
+        "NSMicrophoneUsageDescription": "Nivara uses the microphone for speech-to-text communication.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#f8fafc"
+      },
+      "package": "com.nivara.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_ADVERTISE",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
+    },
+    "plugins": [
+      "expo-location",
+      "expo-notifications",
+      "expo-font",
+      "expo-secure-store",
+      "expo-image-picker",
+      "expo-document-picker",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Nivara uses the microphone for speech-to-text communication."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#f8fafc",
+          "image": "./assets/images/splash.png",
+          "imageWidth": 200
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
+  }
+}
