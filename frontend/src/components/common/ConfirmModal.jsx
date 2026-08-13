@@ -43,7 +43,7 @@ const ConfirmModal = ({
       <View style={styles.overlay}>
         {/* Modal Container */}
         <View style={styles.modalContainer}>
-          
+
           {/* Top Right Close X */}
           {!isLoading && (
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -54,13 +54,13 @@ const ConfirmModal = ({
           {/* Optional Icon Header */}
           {icon && (
             <View style={[
-              styles.iconWrapper, 
+              styles.iconWrapper,
               isDestructive ? styles.iconWrapperDestructive : {}
             ]}>
-              <Ionicons 
-                name={icon} 
-                size={32} 
-                color={isDestructive ? lightTheme.colors.status.emergency : lightTheme.colors.primary} 
+              <Ionicons
+                name={icon}
+                size={32}
+                color={isDestructive ? lightTheme.colors.status.emergency : lightTheme.colors.primary}
               />
             </View>
           )}
@@ -79,10 +79,10 @@ const ConfirmModal = ({
                 disabled={isLoading}
               />
             </View>
-            
+
             {/* Gap */}
             <View style={{ width: lightTheme.spacing.md }} />
-            
+
             <View style={styles.buttonWrapper}>
               <AppButton
                 title={confirmText}
@@ -92,7 +92,7 @@ const ConfirmModal = ({
               />
             </View>
           </View>
-          
+
         </View>
       </View>
     </Modal>

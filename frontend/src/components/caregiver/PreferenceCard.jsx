@@ -16,24 +16,24 @@ import AppCard from '../common/AppCard';
  * @param {Function} props.onToggle - Callback when the switch is flipped
  * @param {boolean} [props.disabled=false] - Disables the toggle temporarily (e.g. while syncing API)
  */
-const PreferenceCard = ({ 
-  title, 
-  description, 
-  icon, 
-  value, 
-  onToggle, 
-  disabled = false 
+const PreferenceCard = ({
+  title,
+  description,
+  icon,
+  value,
+  onToggle,
+  disabled = false
 }) => {
   return (
     <AppCard style={[styles.card, disabled && styles.cardDisabled]} noPadding>
       <View style={styles.container}>
-        
+
         {/* Left Icon */}
         <View style={styles.iconContainer}>
-          <Ionicons 
-            name={icon} 
-            size={24} 
-            color={disabled ? lightTheme.colors.text.tertiary : lightTheme.colors.primary} 
+          <Ionicons
+            name={icon}
+            size={24}
+            color={disabled ? lightTheme.colors.text.tertiary : lightTheme.colors.primary}
           />
         </View>
 
@@ -50,9 +50,9 @@ const PreferenceCard = ({
         {/* Right Toggle */}
         <View style={styles.switchContainer}>
           <Switch
-            trackColor={{ 
-              false: lightTheme.colors.border, 
-              true: lightTheme.colors.primaryLight 
+            trackColor={{
+              false: lightTheme.colors.border,
+              true: lightTheme.colors.primaryLight
             }}
             thumbColor={value ? lightTheme.colors.primary : '#f4f3f4'}
             ios_backgroundColor={lightTheme.colors.surfaceHover}

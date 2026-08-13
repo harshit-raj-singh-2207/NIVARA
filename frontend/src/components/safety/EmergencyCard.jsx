@@ -67,9 +67,9 @@ const EmergencyCard = ({ emergency, onResolve, isLoading = false }) => {
         If the autist user clicks this, it might prompt a ConfirmModal to avoid accidental cancellation.
       */}
       <View style={styles.actionContainer}>
-        <AppButton 
-          title="RESOLVE EMERGENCY" 
-          variant="danger" 
+        <AppButton
+          title="RESOLVE EMERGENCY"
+          variant="danger"
           onPress={onResolve}
           isLoading={isLoading}
         />

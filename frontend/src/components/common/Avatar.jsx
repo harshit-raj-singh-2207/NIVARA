@@ -12,12 +12,12 @@ import { lightTheme } from '../../theme';
  * @param {number} [props.size=48] - Dimensions (width/height) of the avatar
  * @param {string} [props.fallbackColor] - Background color for the initials fallback
  */
-const Avatar = ({ 
-  imageUrl, 
-  name = 'User', 
+const Avatar = ({
+  imageUrl,
+  name = 'User',
   size = 48,
   fallbackColor = lightTheme.colors.primary,
-  style 
+  style
 }) => {
 
   const getInitials = (fullName) => {
@@ -37,8 +37,8 @@ const Avatar = ({
 
   if (imageUrl) {
     return (
-      <Image 
-        source={{ uri: imageUrl }} 
+      <Image
+        source={{ uri: imageUrl }}
         style={containerStyle}
         resizeMode="cover"
       />

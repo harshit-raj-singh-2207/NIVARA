@@ -17,14 +17,14 @@ import { BandConnectionStatus } from '../../types/safety';
 const ConnectionStatus = ({ bandStatus, onManagePress }) => {
   const isConnected = bandStatus?.isConnected;
   const isConnecting = bandStatus?.connectionState === BandConnectionStatus.CONNECTING;
-  
+
   const batteryLevel = bandStatus?.batteryLevel;
 
   // Determine UI states
   let iconColor = lightTheme.colors.text.tertiary;
   let statusText = 'Disconnected';
   let badgeStatus = 'default';
-  
+
   if (isConnected) {
     iconColor = lightTheme.colors.primary;
     statusText = 'Connected';
@@ -46,7 +46,7 @@ const ConnectionStatus = ({ bandStatus, onManagePress }) => {
   return (
     <AppCard style={styles.card}>
       <View style={styles.mainRow}>
-        
+
         {/* Left: Icon & Status Text */}
         <View style={styles.statusSection}>
           <View style={[styles.iconCircle, { backgroundColor: isConnected ? lightTheme.colors.primaryLight : lightTheme.colors.surfaceHover }]}>
@@ -67,8 +67,8 @@ const ConnectionStatus = ({ bandStatus, onManagePress }) => {
         </View>
 
         {/* Right: Action Button */}
-        <TouchableOpacity 
-          style={styles.manageButton} 
+        <TouchableOpacity
+          style={styles.manageButton}
           onPress={onManagePress}
           activeOpacity={0.7}
         >

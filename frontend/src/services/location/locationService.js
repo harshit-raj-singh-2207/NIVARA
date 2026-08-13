@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import * as Location from 'expo-location';
 import { checkPermission } from '../../utils/permissionUtils';
 import { PERMISSION_TYPES, PERMISSION_STATUS } from '../../constants/permissions';
@@ -96,3 +97,33 @@ export const locationService = {
     return subscription;
   }
 };
+=======
+/**
+ * Location Service for NIVARA GPS Wearable & Geofence tracking.
+ */
+
+export const locationService = {
+  getCurrentLocation: async () => {
+    return {
+      latitude: 37.7749,
+      longitude: -122.4194,
+      address: '124 Sensory Safe Haven, Innovation Hub, Tech City',
+      isInsideSafeZone: true,
+    };
+  },
+
+  subscribeLocation: (callback) => {
+    const interval = setInterval(() => {
+      callback({
+        latitude: 37.7749 + (Math.random() - 0.5) * 0.001,
+        longitude: -122.4194 + (Math.random() - 0.5) * 0.001,
+        address: '124 Sensory Safe Haven, Innovation Hub, Tech City',
+        isInsideSafeZone: true,
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  },
+};
+
+export default locationService;
+>>>>>>> e7aded7bdfe7c0dc94f52e15f9e5062d81aba6f3

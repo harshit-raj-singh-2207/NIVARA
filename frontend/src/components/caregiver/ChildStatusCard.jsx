@@ -36,23 +36,23 @@ const ChildStatusCard = ({ child, status, onPress }) => {
   }
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[
-        styles.card, 
+        styles.card,
         { borderColor, backgroundColor: bgColor },
         borderColor !== 'transparent' && styles.cardElevated
-      ]} 
+      ]}
       onPress={onPress}
       activeOpacity={0.8}
     >
       <View style={styles.contentRow}>
-        
+
         {/* Left: Avatar */}
-        <Avatar 
-          name={child.name} 
-          imageUrl={child.avatarUrl} 
-          size={56} 
-          style={styles.avatar} 
+        <Avatar
+          name={child.name}
+          imageUrl={child.avatarUrl}
+          size={56}
+          style={styles.avatar}
         />
 
         {/* Center: Info */}
@@ -60,12 +60,12 @@ const ChildStatusCard = ({ child, status, onPress }) => {
           <Text style={styles.nameText} numberOfLines={1}>
             {child.name}
           </Text>
-          
+
           <View style={styles.locationRow}>
             <Ionicons name="location-outline" size={14} color={lightTheme.colors.text.secondary} />
             <Text style={styles.locationText} numberOfLines={1}>
-              {safety?.isInsideSafeZone && safety?.currentZoneName 
-                ? safety.currentZoneName 
+              {safety?.isInsideSafeZone && safety?.currentZoneName
+                ? safety.currentZoneName
                 : (currentLocation?.address || 'Unknown Location')}
             </Text>
           </View>
@@ -74,14 +74,14 @@ const ChildStatusCard = ({ child, status, onPress }) => {
         {/* Right: Status Badge & Chevron */}
         <View style={styles.rightContainer}>
           <Badge label={badgeLabel} status={badgeStatus} />
-          <Ionicons 
-            name="chevron-forward" 
-            size={20} 
-            color={lightTheme.colors.text.tertiary} 
-            style={styles.chevron} 
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={lightTheme.colors.text.tertiary}
+            style={styles.chevron}
           />
         </View>
-        
+
       </View>
     </TouchableOpacity>
   );

@@ -1,4 +1,5 @@
 /**
+<<<<<<< HEAD
  * Navigation route name constants.
  * Use these instead of raw strings to prevent typos in navigation.navigate() calls.
  *
@@ -22,10 +23,17 @@ export const TABS = {
 
 // ── Auth Screens (Part 4) ───────────────────────────────
 export const AUTH = {
+=======
+ * NIVARA Application Navigation Route Constants.
+ */
+
+export const AUTH_ROUTES = {
+>>>>>>> e7aded7bdfe7c0dc94f52e15f9e5062d81aba6f3
   SPLASH: 'Splash',
   ONBOARDING: 'Onboarding',
   LOGIN: 'Login',
   REGISTER: 'Register',
+<<<<<<< HEAD
   FORGOT_PASSWORD: 'ForgotPassword',
   RESET_PASSWORD: 'ResetPassword',
   CAREGIVER_VERIFICATION: 'CaregiverVerification',
@@ -130,4 +138,42 @@ export const ROUTES = {
   COMMUNITY,
   PROFILE,
   SENSORY,
+=======
+  CAREGIVER_VERIFICATION: 'CaregiverVerification',
+  FORGOT_PASSWORD: 'ForgotPassword',
+  RESET_PASSWORD: 'ResetPassword',
+};
+
+export const MAIN_ROUTES = {
+  HOME_TAB: 'HomeTab',
+  COMMUNITY_TAB: 'CommunityTab',
+  PROFILE_TAB: 'ProfileTab',
+};
+
+export const HOME_ROUTES = {
+  HOME: 'HomeScreen',
+  NOTIFICATIONS: 'NotificationsScreen',
+};
+
+export const PROFILE_ROUTES = {
+  PROFILE: 'ProfileScreen',
+  EDIT_PROFILE: 'EditProfileScreen',
+  SETTINGS: 'SettingsScreen',
+  PRIVACY: 'PrivacyScreen',
+  NOTIFICATION_SETTINGS: 'NotificationSettingsScreen',
+  ABOUT: 'AboutScreen',
+};
+
+export const COMMUNITY_ROUTES = {
+  COMMUNITY_FEED: 'CommunityFeedScreen',
+  CREATE_POST: 'CreatePostScreen',
+};
+
+export default {
+  AUTH_ROUTES,
+  MAIN_ROUTES,
+  HOME_ROUTES,
+  PROFILE_ROUTES,
+  COMMUNITY_ROUTES,
+>>>>>>> e7aded7bdfe7c0dc94f52e15f9e5062d81aba6f3
 };

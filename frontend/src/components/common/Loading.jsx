@@ -12,11 +12,11 @@ import { lightTheme } from '../../theme';
  * @param {string} [props.size='large'] - 'small' or 'large' (React Native ActivityIndicator size)
  * @param {string} [props.color=lightTheme.colors.primary] - Custom color for the spinner
  */
-const Loading = ({ 
-  fullScreen = false, 
-  message, 
-  size = 'large', 
-  color = lightTheme.colors.primary 
+const Loading = ({
+  fullScreen = false,
+  message,
+  size = 'large',
+  color = lightTheme.colors.primary
 }) => {
   return (
     <View style={fullScreen ? styles.fullScreenContainer : styles.localContainer}>

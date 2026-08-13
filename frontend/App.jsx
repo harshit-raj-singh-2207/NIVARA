@@ -28,7 +28,7 @@ const MockNavigator = () => (
     <Ionicons name="shield-checkmark" size={64} color={lightTheme.colors.primary} />
     <Text style={styles.mockTitle}>Nivara</Text>
     <Text style={styles.mockSubtitle}>Safety & Caregiver Core</Text>
-    
+
     <View style={styles.mockBox}>
       <Text style={styles.mockText}>App is successfully bootstrapped! ✅</Text>
       <Text style={styles.mockText}>• Native Services Initialized</Text>
@@ -73,7 +73,7 @@ export default function App() {
     if (!appIsReady) return;
 
     let cleanupNotificationListeners = null;
-    
+
     // Slight delay ensures the Navigation Ref is fully hydrated before deep-linking is allowed
     const timeout = setTimeout(() => {
       if (navigationRef.current) {
@@ -100,14 +100,14 @@ export default function App() {
     return null; // The Native Splash screen remains visible while this returns null
   }
 
-  const currentTheme = getTheme(false); 
+  const currentTheme = getTheme(false);
 
   return (
     <GestureHandlerRootView style={styles.root} onLayout={onLayoutRootView}>
       <SafeAreaProvider>
         <StatusBar style="dark" />
-        
-        <NavigationContainer 
+
+        <NavigationContainer
           ref={navigationRef}
           theme={{
             dark: false,
@@ -135,8 +135,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mockContainer: {
-    flex: 1, 
-    justifyContent: 'center', 
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: lightTheme.colors.background,
     padding: 24,

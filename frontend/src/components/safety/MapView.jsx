@@ -58,9 +58,9 @@ const AppMapView = ({
         zoomEnabled={zoomEnabled}
         pitchEnabled={false}
         toolbarEnabled={false}
-        // customMapStyle={customMapStyleJson} // Optional: Pass a generated JSON to match darkTheme/lightTheme
+      // customMapStyle={customMapStyleJson} // Optional: Pass a generated JSON to match darkTheme/lightTheme
       >
-        
+
         {/* Render Safe Zones (Geofence Boundaries) */}
         {safeZones.map((zone) => (
           <Circle

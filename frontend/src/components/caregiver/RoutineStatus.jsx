@@ -38,15 +38,15 @@ const RoutineStatus = ({ currentRoutine, isOnTrack = true }) => {
       <View style={styles.header}>
         <Ionicons name="calendar" size={20} color={lightTheme.colors.primary} />
         <Text style={styles.headerTitle}>Current Routine</Text>
-        <Badge 
-          label={trackText} 
-          status={isOnTrack ? 'safe' : 'warning'} 
-          style={styles.badgeAlign} 
+        <Badge
+          label={trackText}
+          status={isOnTrack ? 'safe' : 'warning'}
+          style={styles.badgeAlign}
         />
       </View>
 
       <View style={styles.content}>
-        
+
         {/* Left: Routine Details */}
         <View style={styles.detailsSection}>
           <Text style={styles.routineTitle} numberOfLines={1}>

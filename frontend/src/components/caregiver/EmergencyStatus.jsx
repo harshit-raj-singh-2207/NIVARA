@@ -48,9 +48,9 @@ const EmergencyStatus = ({ emergency, onResolve, isLoading = false }) => {
 
         <View style={styles.actionRow}>
           {/* A secondary button could be to call 911/authorities, skipping for now to focus on resolve */}
-          <AppButton 
-            title="Mark as Resolved" 
-            variant="danger" 
+          <AppButton
+            title="Mark as Resolved"
+            variant="danger"
             onPress={onResolve}
             isLoading={isLoading}
             style={styles.resolveButton}

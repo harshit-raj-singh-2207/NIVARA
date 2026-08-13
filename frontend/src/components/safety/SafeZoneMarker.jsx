@@ -31,7 +31,7 @@ const SafeZoneMarker = ({
         strokeColor={lightTheme.colors.primary}
         fillColor="rgba(14, 165, 233, 0.25)" // Slightly darker than the regular map overlay
       />
-      
+
       <Marker
         coordinate={coordinate}
         draggable={draggable}

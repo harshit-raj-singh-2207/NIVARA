@@ -15,12 +15,12 @@ import { lightTheme } from '../../theme';
  * @param {string} [props.rightIcon] - Ionicons name for right button
  * @param {Function} [props.onRightPress] - Action for right button
  */
-const AppHeader = ({ 
-  title, 
-  showBack = false, 
+const AppHeader = ({
+  title,
+  showBack = false,
   onBack,
-  rightIcon, 
-  onRightPress 
+  rightIcon,
+  onRightPress
 }) => {
   const navigation = useNavigation();
 
@@ -37,8 +37,8 @@ const AppHeader = ({
       {/* Left Area: Back Button or Placeholder */}
       <View style={styles.sideContainer}>
         {showBack && (
-          <TouchableOpacity 
-            style={styles.iconButton} 
+          <TouchableOpacity
+            style={styles.iconButton}
             onPress={handleBackPress}
             activeOpacity={0.7}
           >
@@ -57,8 +57,8 @@ const AppHeader = ({
       {/* Right Area: Action Icon or Placeholder */}
       <View style={styles.sideContainer}>
         {rightIcon && (
-          <TouchableOpacity 
-            style={[styles.iconButton, styles.rightButton]} 
+          <TouchableOpacity
+            style={[styles.iconButton, styles.rightButton]}
             onPress={onRightPress}
             activeOpacity={0.7}
           >
