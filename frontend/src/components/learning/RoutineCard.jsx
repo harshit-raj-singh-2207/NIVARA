@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.md,
     backgroundColor: BRAND_COLORS.primaryLight + '15',
     alignItems: 'center',
-    justify.content: 'center',
+    justifyContent: 'center',
     marginRight: SPACING.md,
   },
   icon: {

@@ -9,6 +9,8 @@ import { HOME_ROUTES } from '../constants/routes';
 
 import HomeScreen from '../screens/home/HomeScreen';
 import NotificationsScreen from '../screens/home/NotificationsScreen';
+import CommunicationNavigator from './CommunicationNavigator';
+import LearningNavigator from './LearningNavigator';
 
 const Stack = createNativeStackNavigator();
 
@@ -23,6 +25,8 @@ export const HomeNavigator = () => {
     >
       <Stack.Screen name={HOME_ROUTES.HOME} component={HomeScreen} />
       <Stack.Screen name={HOME_ROUTES.NOTIFICATIONS} component={NotificationsScreen} />
+      <Stack.Screen name={HOME_ROUTES.COMMUNICATION} component={CommunicationNavigator} />
+      <Stack.Screen name={HOME_ROUTES.LEARNING} component={LearningNavigator} />
     </Stack.Navigator>
   );
 };

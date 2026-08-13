@@ -7,7 +7,7 @@ import apiClient from './apiClient';
 export const learningApi = {
   getRoutines: async () => {
     try {
-      return await apiClient.get('/api/v1/learning/routines');
+      return await apiClient.get('/learning/routines');
     } catch (err) {
       // Mock fallback data for routines
       return [
@@ -82,13 +82,14 @@ export const learningApi = {
 
   updateStepCompletion: async (taskId, stepId, completed) => {
     try {
-      return await apiClient.patch(`/api/v1/learning/tasks/${taskId}/steps/${stepId}`, {
+      return await apiClient.patch(`/learning/tasks/${taskId}/steps/${stepId}`, {
         completed,
       });
     } catch (err) {
       return { success: true };
     }
   },
+  askTutor: (concept, mode = 'simple') => apiClient.post('/learning/tutor/explain', { concept, explanation_level: mode }),
 };
 
 export default learningApi;

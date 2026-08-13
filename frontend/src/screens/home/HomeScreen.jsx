@@ -368,6 +368,7 @@ export const HomeScreen = ({ navigation }) => {
               </TouchableOpacity>
             ))}
           </View>
+          <AppButton title="Open Communication Assistant" variant="outline" size="small" onPress={() => navigation.navigate('CommunicationFlow')} style={{ marginTop: spacing.sm }} />
         </AppCard>
 
         {/* 3. SAFETY & LOCATION STATUS WIDGET */}
@@ -504,6 +505,7 @@ export const HomeScreen = ({ navigation }) => {
               {activeRoutine.warning}
             </Text>
           </View>
+          <AppButton title="Open Learning & Daily Life" variant="outline" size="small" onPress={() => navigation.navigate('LearningFlow')} style={{ marginTop: spacing.sm }} />
         </AppCard>
 
         {/* 5. CAREGIVER ACCESS TOGGLE / LINKED PATIENTS (ONLY IF USER IS CAREGIVER) */}

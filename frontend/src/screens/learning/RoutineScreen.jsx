@@ -28,6 +28,7 @@ import TaskCard from '../../components/learning/TaskCard';
 import TaskStep from '../../components/learning/TaskStep';
 import ProgressBar from '../../components/learning/ProgressBar';
 import ReminderCard from '../../components/learning/ReminderCard';
+import { LEARNING_ROUTES } from '../../constants/routes';
 
 export const RoutineScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -158,6 +159,7 @@ export const RoutineScreen = ({ navigation }) => {
               color={progressRatio === 1 ? colors.status.success : colors.primary}
               style={{ marginTop: spacing.xs }}
             />
+            <AppButton title="Open routine details" variant="outline" size="small" onPress={() => navigation.navigate(LEARNING_ROUTES.ROUTINE_DETAILS, { routineId: activeRoutine.id })} style={{ marginTop: spacing.md }} />
           </AppCard>
         )}
 
@@ -183,6 +185,7 @@ export const RoutineScreen = ({ navigation }) => {
               key={taskItem.id}
               task={taskItem}
               onToggleStep={handleToggleStep}
+              onPress={() => navigation.navigate(LEARNING_ROUTES.TASK_DETAILS, { taskId: taskItem.id, routineId: activeRoutine.id })}
             />
           ))
         ) : (

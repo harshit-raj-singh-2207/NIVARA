@@ -36,7 +36,9 @@ export const TaskCard = ({ task, onToggleStep, onPress }) => {
     >
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => setExpanded(!expanded)}
+        onPress={() => { setExpanded(!expanded); if (onPress) onPress(task); }}
+        accessibilityRole="button"
+        accessibilityLabel={`${task.title}, ${completedSteps} of ${steps.length} steps complete`}
         style={styles.cardHeader}
       >
         <Text style={{ fontSize: 24, marginRight: 10 }}>{task.icon || '📋'}</Text>

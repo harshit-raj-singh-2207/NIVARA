@@ -21,6 +21,18 @@ export const MAIN_ROUTES = {
 export const HOME_ROUTES = {
   HOME: 'HomeScreen',
   NOTIFICATIONS: 'NotificationsScreen',
+  COMMUNICATION: 'CommunicationFlow',
+  LEARNING: 'LearningFlow',
+};
+
+export const COMMUNICATION_ROUTES = {
+  HOME: 'CommunicationScreen', AAC: 'AACScreen', EMOTION: 'EmotionScreen',
+  QUICK: 'QuickCommunicationScreen', HISTORY: 'CommunicationHistoryScreen',
+};
+
+export const LEARNING_ROUTES = {
+  HOME: 'LearningHomeScreen', ROUTINES: 'RoutineScreen', ROUTINE_DETAILS: 'RoutineDetailsScreen',
+  TASK_DETAILS: 'TaskDetailsScreen', TOPICS: 'LearningTopicsScreen', TUTOR: 'TutorScreen', REMINDERS: 'RemindersScreen',
 };
 
 export const PROFILE_ROUTES = {
@@ -41,6 +53,8 @@ export default {
   AUTH_ROUTES,
   MAIN_ROUTES,
   HOME_ROUTES,
+  COMMUNICATION_ROUTES,
+  LEARNING_ROUTES,
   PROFILE_ROUTES,
   COMMUNITY_ROUTES,
 };

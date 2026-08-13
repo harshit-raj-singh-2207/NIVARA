@@ -8,7 +8,7 @@ import apiClient from './apiClient';
 export const communicationApi = {
   simplifyText: async (text, style = 'simple') => {
     try {
-      return await apiClient.post('/api/v1/communication/simplify', { text, style });
+      return await apiClient.post('/communication/simplify', { text, style });
     } catch (err) {
       // Graceful fallback for demo/offline simulation
       return {
@@ -20,9 +20,10 @@ export const communicationApi = {
 
   generateSentences: async (emotion, promptText = '', style = 'simple') => {
     try {
-      return await apiClient.post('/api/v1/communication/generate', {
+      return await apiClient.post('/communication/generate-sentence', {
         emotion,
         prompt: promptText,
+        keywords: [],
         style,
       });
     } catch (err) {
@@ -36,10 +37,12 @@ export const communicationApi = {
       };
     }
   },
+  explainMessage: (message) => apiClient.post('/communication/explain', { message }),
+  getHistory: (params = { limit: 50, skip: 0 }) => apiClient.get('/communication/history', { params }),
 
   sendQuickPanicNeed: async (needType, location = null) => {
     try {
-      return await apiClient.post('/api/v1/notifications/send-alert', {
+      return await apiClient.post('/notifications/send-alert', {
         alert_type: 'EMERGENCY_SOS',
         title: `Quick Need: ${needType}`,
         message: `User activated quick need shortcut: "${needType}"`,
