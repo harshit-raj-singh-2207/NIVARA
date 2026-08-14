@@ -1,129 +1,43 @@
-/**
- * Accessible Reusable Header Component for NIVARA.
- * Displays screen title, subtitle, back navigation button, and right action buttons.
- */
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export const AppHeader = ({
   title,
   subtitle,
-  onBackPress,
-  rightComponent,
   showBack = false,
-  style,
-  titleStyle,
-  accessibilityLabel,
+  onBackPress,
+  rightAction,
+  className = '',
 }) => {
-  const { theme } = useTheme();
-  const { colors, spacing, typography } = theme;
-
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: colors.surface,
-          borderBottomColor: colors.border,
-          borderBottomWidth: 1,
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.sm + 4,
-        },
-        style,
-      ]}
-      accessible={true}
-      accessibilityRole="header"
-      accessibilityLabel={accessibilityLabel || title}
-    >
-      <View style={styles.leftContainer}>
-        {showBack && onBackPress && (
+    <View className={`flex-row items-center justify-between px-5 py-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 ${className}`}>
+      <View className="flex-row items-center flex-1 space-x-3">
+        {showBack && (
           <TouchableOpacity
             onPress={onBackPress}
             accessible={true}
             accessibilityRole="button"
             accessibilityLabel="Go back"
-            style={[styles.backButton, { marginRight: spacing.sm }]}
+            className="mr-2 p-2 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 active:bg-slate-100"
           >
-            <Text style={[styles.backText, { color: colors.primary, fontSize: typography.sizes.lg }]}>
-              ←
-            </Text>
+            <Ionicons name="chevron-back" size={22} color="#5B8DEF" />
           </TouchableOpacity>
         )}
-        <View style={styles.titleContainer}>
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.title,
-              {
-                color: colors.text,
-                fontSize: typography.sizes.lg,
-                fontWeight: typography.weights.bold,
-              },
-              titleStyle,
-            ]}
-          >
+        <View className="flex-1">
+          <Text className="text-xl font-black text-[#1F2937] dark:text-white" numberOfLines={1}>
             {title}
           </Text>
           {subtitle && (
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.subtitle,
-                {
-                  color: colors.textSecondary,
-                  fontSize: typography.sizes.xs,
-                  fontWeight: typography.weights.medium,
-                  marginTop: 2,
-                },
-              ]}
-            >
+            <Text className="text-xs font-semibold text-[#64748B] dark:text-slate-400 mt-0.5" numberOfLines={1}>
               {subtitle}
             </Text>
           )}
         </View>
       </View>
-
-      {rightComponent && <View style={styles.rightContainer}>{rightComponent}</View>}
+      {rightAction && <View className="ml-2">{rightAction}</View>}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  leftContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  backButton: {
-    padding: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backText: {
-    fontWeight: 'bold',
-  },
-  titleContainer: {
-    flex: 1,
-  },
-  title: {
-    textAlign: 'left',
-  },
-  subtitle: {
-    textAlign: 'left',
-  },
-  rightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-});
 
 export default AppHeader;

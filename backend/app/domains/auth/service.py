@@ -1,276 +1,283 @@
-"""
-Authentication Domain Service Layer for NIVARA backend.
-Encapsulates registration, authentication, token refresh, password resets, and caregiver code verification.
-"""
-
+import random
 import logging
-import secrets
-import string
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from typing import Dict, Any, Optional
 from bson import ObjectId
-import jwt
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.core.config import settings
-from app.core.constants import CollectionNames, TokenType, UserRole
-from app.core.exceptions import (
-    ConflictError,
-    InvalidTokenError,
-    NotFoundException,
-    TokenExpiredError,
-    UnauthorizedException,
-)
-from app.core.security import (
-    create_access_token,
-    create_refresh_token,
-    decode_token,
-    get_password_hash,
-    verify_password,
-)
-from app.domains.auth.schemas import (
-    CaregiverVerificationResponse,
-    ForgotPasswordResponse,
-    ResetPasswordResponse,
-    TokenResponse,
-    UserLoginRequest,
-    UserRegisterRequest,
-)
-from app.domains.users.schemas import SensoryPreferences, UserResponse
+from app.core.security import create_access_token, verify_password, get_password_hash
+from app.core.exceptions import AuthenticationError, ConflictError, ValidationError, NotFoundException
+from app.domains.auth.repository import auth_repository
 from app.domains.users.service import format_user_doc
+from app.core.constants import UserRole, CaregiverVerificationStatus, CollectionNames
+from app.infrastructure.email.service import email_service
+from app.infrastructure.logging.logger import log_audit_event
+from app.domains.auth.schemas import CaregiverVerificationRequest, VerificationType
 
 logger = logging.getLogger(__name__)
 
-
-def generate_caregiver_code() -> str:
-    """Generates a random 6-character caregiver pairing code (e.g. CG-A1B2C3)."""
-    chars = string.ascii_uppercase + string.digits
-    random_str = "".join(secrets.choice(chars) for _ in range(6))
-    return f"CG-{random_str}"
-
+def generate_code() -> str:
+    return "".join(random.choices("0123456789", k=6))
 
 class AuthService:
-    """Service class managing core authentication, user registration, token management, and password recovery."""
-
     @staticmethod
-    async def register_user(
-        db: AsyncIOMotorDatabase,
-        payload: UserRegisterRequest,
-    ) -> TokenResponse:
-        """Registers a new account (USER or CAREGIVER) in MongoDB."""
-        email_clean = payload.email.lower().strip()
+    async def authenticate_user(email: str, password: str) -> dict:
+        user_doc = await auth_repository.find_one({"email": email.strip().lower()})
+        if not user_doc:
+            raise AuthenticationError("Invalid email or password.")
 
-        # Check for existing email registration
-        existing_user = await db[CollectionNames.USERS].find_one({"email": email_clean})
-        if existing_user:
-            raise ConflictError(message=f"An account with email '{email_clean}' already exists")
+        hashed_password = user_doc.get("hashed_password") or user_doc.get("password_hash")
+        if not hashed_password or not verify_password(password, hashed_password):
+            raise AuthenticationError("Invalid email or password.")
 
-        caregiver_id: Optional[str] = None
-        caregiver_code_generated: Optional[str] = None
+        if not user_doc.get("is_active", True):
+            raise AuthenticationError("This user account is inactive.")
 
-        # Link regular user to caregiver if pairing code provided
-        if payload.caregiver_code and payload.role == UserRole.USER:
-            cg_doc = await db[CollectionNames.USERS].find_one(
-                {"role": UserRole.CAREGIVER.value, "caregiver_code": payload.caregiver_code.strip()}
-            )
-            if cg_doc:
-                caregiver_id = str(cg_doc["_id"])
-                logger.info(f"Linking new user to Caregiver {caregiver_id}")
-            else:
-                logger.warning(f"Caregiver code '{payload.caregiver_code}' not found during user registration")
+        user_id = str(user_doc["_id"])
+        role = user_doc.get("role", "USER")
 
-        # Assign caregiver pairing code if registering AS a Caregiver
-        if payload.role == UserRole.CAREGIVER:
-            caregiver_code_generated = generate_caregiver_code()
+        token = create_access_token(subject=user_id, role=role)
+        formatted_user = format_user_doc(user_doc)
 
-        hashed_password = get_password_hash(payload.password)
-        now_iso = datetime.now(timezone.utc).isoformat()
-        user_id = str(ObjectId())
+        await log_audit_event(user_id, "login")
 
-        user_doc: Dict[str, Any] = {
-            "_id": user_id,
-            "email": email_clean,
-            "hashed_password": hashed_password,
-            "full_name": payload.full_name.strip(),
-            "role": payload.role.value,
-            "is_active": True,
-            "caregiver_id": caregiver_id,
-            "caregiver_code": caregiver_code_generated,
-            "phone_number": None,
-            "avatar_url": None,
-            "bio": None,
-            "emergency_contacts": [],
-            "sensory_preferences": SensoryPreferences().model_dump(),
-            "created_at": now_iso,
-            "updated_at": now_iso,
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user": formatted_user
         }
 
-        await db[CollectionNames.USERS].insert_one(user_doc)
-
-        user_response = format_user_doc(user_doc)
-        access_token = create_access_token(subject=user_id, role=payload.role.value)
-        refresh_token = create_refresh_token(subject=user_id, role=payload.role.value)
-
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            token_type="bearer",
-            user=user_response,
-        )
-
     @staticmethod
-    async def login_user(
-        db: AsyncIOMotorDatabase,
-        payload: UserLoginRequest,
-    ) -> TokenResponse:
-        """Authenticates email and password credentials."""
-        email_clean = payload.email.lower().strip()
-        user = await db[CollectionNames.USERS].find_one({"email": email_clean})
+    async def register_user(data: dict) -> dict:
+        email = data.get("email").strip().lower()
+        existing = await auth_repository.find_one({"email": email})
+        if existing:
+            raise ConflictError("User with this email already exists.")
 
-        if not user or not verify_password(payload.password, user.get("hashed_password", "")):
-            raise UnauthorizedException(message="Invalid email address or password")
-
-        if not user.get("is_active", True):
-            raise UnauthorizedException(message="User account is deactivated")
-
-        user_id = str(user["_id"])
-        user_role = user.get("role", UserRole.USER.value)
-
-        access_token = create_access_token(subject=user_id, role=user_role)
-        refresh_token = create_refresh_token(subject=user_id, role=user_role)
-
-        user_response = format_user_doc(user)
-
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            token_type="bearer",
-            user=user_response,
-        )
-
-    @staticmethod
-    async def refresh_tokens(
-        db: AsyncIOMotorDatabase,
-        refresh_token: str,
-    ) -> TokenResponse:
-        """Exchanges a valid JWT refresh token for a new pair of access and refresh tokens."""
-        payload = decode_token(refresh_token)
-
-        if payload.get("type") != TokenType.REFRESH.value:
-            raise InvalidTokenError(message="Provided token is not a valid refresh token")
-
-        user_id = payload.get("sub")
-        if not user_id:
-            raise InvalidTokenError(message="Invalid refresh token payload")
-
-        query: Dict[str, Any] = {"_id": user_id}
-        if ObjectId.is_valid(user_id):
-            query = {"$or": [{"_id": user_id}, {"_id": ObjectId(user_id)}]}
-
-        user = await db[CollectionNames.USERS].find_one(query)
-        if not user or not user.get("is_active", True):
-            raise UnauthorizedException(message="User account no longer exists or is deactivated")
-
-        user_role = user.get("role", UserRole.USER.value)
-        new_access_token = create_access_token(subject=user_id, role=user_role)
-        new_refresh_token = create_refresh_token(subject=user_id, role=user_role)
-
-        user_response = format_user_doc(user)
-
-        return TokenResponse(
-            access_token=new_access_token,
-            refresh_token=new_refresh_token,
-            token_type="bearer",
-            user=user_response,
-        )
-
-    @staticmethod
-    async def forgot_password(
-        db: AsyncIOMotorDatabase,
-        email: str,
-    ) -> ForgotPasswordResponse:
-        """Initiates password reset flow by issuing a short-lived password reset token."""
-        email_clean = email.lower().strip()
-        user = await db[CollectionNames.USERS].find_one({"email": email_clean})
-
-        if not user:
-            # Prevent email enumeration by returning a generic success message
-            return ForgotPasswordResponse(
-                message="If the account exists, a password reset link has been dispatched.",
-            )
+        hashed = get_password_hash(data.get("password"))
+        role = data.get("role", "USER").upper()
+        if role not in [r.value for r in UserRole]:
+            role = "USER"
 
         now = datetime.now(timezone.utc)
-        expires = now + timedelta(minutes=15)
-        reset_payload = {
-            "sub": str(user["_id"]),
-            "type": "reset_password",
-            "iat": int(now.timestamp()),
-            "exp": int(expires.timestamp()),
+
+        # Generate a pairing code for caregiver linking
+        pairing_code = generate_code()
+
+        user_doc = {
+            "email": email,
+            "hashed_password": hashed,
+            "full_name": data.get("full_name").strip(),
+            "role": role,
+            "is_active": True,
+            "is_verified": True,
+            "caregiver_code": pairing_code,
+            "linking_code": pairing_code,
+            "emergency_contacts": [],
+            "sensory_preferences": {
+                "noise_threshold_db": 85.0,
+                "brightness_sensitivity": True,
+                "crowd_tolerance": "medium",
+                "auto_dark_mode_on_overload": True,
+                "theme_mode": "system",
+            },
+            "communication_preferences": {
+                "preferred_language": "English",
+                "communication_preference": "ICONS",
+                "text_simplification_level": "simple",
+            },
+            "created_at": now,
+            "updated_at": now,
         }
 
-        reset_token = jwt.encode(reset_payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-        logger.info(f"Generated password reset token for user {user['_id']}")
+        inserted = await auth_repository.insert_one(user_doc)
+        user_id = str(inserted["_id"])
 
-        return ForgotPasswordResponse(
-            message="If the account exists, a password reset link has been dispatched.",
-            reset_token=reset_token,
-        )
+        token = create_access_token(subject=user_id, role=role)
+        formatted_user = format_user_doc(inserted)
+
+        await log_audit_event(user_id, "login")
+
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user": formatted_user
+        }
 
     @staticmethod
-    async def reset_password(
-        db: AsyncIOMotorDatabase,
-        token: str,
-        new_password: str,
-    ) -> ResetPasswordResponse:
-        """Completes password reset using a validated reset token."""
-        try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-        except jwt.ExpiredSignatureError:
-            raise TokenExpiredError(message="Password reset token has expired")
-        except jwt.PyJWTError:
-            raise InvalidTokenError(message="Invalid password reset token")
+    async def forgot_password(email: str) -> bool:
+        user_doc = await auth_repository.find_one({"email": email.strip().lower()})
+        if not user_doc:
+            # Silently return True for privacy, but skip mailing
+            return True
 
-        if payload.get("type") != "reset_password":
-            raise InvalidTokenError(message="Token is not a password reset token")
+        reset_code = generate_code()
+        expiry = datetime.now(timezone.utc) + timedelta(minutes=15)
 
-        user_id = payload.get("sub")
+        if auth_repository.collection is not None:
+            await auth_repository.collection.update_one(
+                {"_id": user_doc["_id"]},
+                {"$set": {
+                    "password_reset_code": reset_code,
+                    "password_reset_code_expires_at": expiry
+                }}
+            )
+
+        # Dispatch reset email
+        await email_service.send_password_reset_email(user_doc["email"], reset_code)
+        return True
+
+    @staticmethod
+    async def reset_password(email: str, code: str, new_password: str) -> bool:
+        user_doc = await auth_repository.find_one({"email": email.strip().lower()})
+        if not user_doc:
+            raise NotFoundException("User not found.")
+
+        stored_code = user_doc.get("password_reset_code")
+        expiry = user_doc.get("password_reset_code_expires_at")
+
+        # Make sure expiry is timezone-aware
+        if expiry and isinstance(expiry, datetime) and expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+
+        if not stored_code or stored_code != code:
+            raise ValidationError("Invalid password reset code.")
+
+        if not expiry or datetime.now(timezone.utc) > expiry:
+            raise ValidationError("Password reset code has expired.")
+
+        hashed = get_password_hash(new_password)
+
+        if auth_repository.collection is not None:
+            await auth_repository.collection.update_one(
+                {"_id": user_doc["_id"]},
+                {
+                    "$set": {"hashed_password": hashed, "updated_at": datetime.now(timezone.utc)},
+                    "$unset": {"password_reset_code": "", "password_reset_code_expires_at": ""}
+                }
+            )
+
+        return True
+
+    @staticmethod
+    async def verify_caregiver_service(
+        user_id: str,
+        payload: CaregiverVerificationRequest,
+        current_user: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Executes caregiver verification or code pairing.
+        Returns the updated user document dict.
+        """
+        now = datetime.now(timezone.utc)
+        now_iso = now.isoformat()
+        
+        # Build update fields on current user
+        update_fields: Dict[str, Any] = {
+            "phone_number": payload.emergency_contact_number.strip(),
+            "updated_at": now,
+        }
+
+        emergency_contacts = current_user.get("emergency_contacts", [])
+        has_contact = any(
+            c.get("phone") == payload.emergency_contact_number.strip() for c in emergency_contacts
+        )
+        if not has_contact:
+            emergency_contacts.append({
+                "name": current_user.get("full_name", "Emergency Contact"),
+                "phone": payload.emergency_contact_number.strip(),
+                "relationship": "Primary Emergency Contact",
+                "is_primary": True,
+            })
+            update_fields["emergency_contacts"] = emergency_contacts
+
+        message = ""
+
+        if payload.verification_type == VerificationType.PAIRING_CODE:
+            code_to_check = payload.linking_code or payload.caregiver_code
+            if not code_to_check or not code_to_check.strip():
+                raise ValidationError("linking_code is required for PAIRING_CODE verification type.")
+
+            clean_code = code_to_check.strip().upper()
+
+            # Search user matching code
+            target_user = await auth_repository.find_one({
+                "$or": [
+                    {"caregiver_code": clean_code},
+                    {"linking_code": clean_code},
+                ]
+            })
+
+            # Check inside pairing_requests
+            db = auth_repository.collection.database if auth_repository.collection is not None else None
+            if not target_user and db is not None:
+                pairing_req = await db["pairing_requests"].find_one({
+                    "linking_code": clean_code, "status": "PENDING"
+                })
+                if pairing_req:
+                    target_user_id = str(pairing_req.get("user_id"))
+                    target_user = await auth_repository.find_one({"_id": target_user_id})
+
+            if not target_user:
+                raise NotFoundException(f"No user account or pairing code found for: '{clean_code}'")
+
+            target_user_id = str(target_user["_id"])
+            if target_user_id == user_id:
+                raise ConflictError("Cannot link caregiver account using your own pairing code.")
+
+            # Link caregiver_id and user_id
+            update_fields["caregiver_id"] = target_user_id
+            update_fields["role"] = UserRole.CAREGIVER.value
+            update_fields["caregiver_verification_status"] = CaregiverVerificationStatus.VERIFIED.value
+
+            # Update target user (patient)
+            if auth_repository.collection is not None:
+                await auth_repository.collection.update_one(
+                    {"_id": target_user["_id"]},
+                    {"$set": {"caregiver_id": user_id, "caregiver_verification_status": CaregiverVerificationStatus.VERIFIED.value, "updated_at": now}}
+                )
+
+                if db is not None:
+                    await db["pairing_requests"].update_many(
+                        {"linking_code": clean_code},
+                        {"$set": {"status": "APPROVED", "caregiver_id": user_id, "updated_at": now_iso}}
+                    )
+
+            message = f"Successfully linked caregiver account with user '{target_user.get('full_name') or target_user_id}'."
+
+        elif payload.verification_type == VerificationType.DOCUMENT:
+            if not payload.document_url or not payload.document_url.strip():
+                raise ValidationError("document_url is required for DOCUMENT verification type.")
+
+            update_fields["document_url"] = payload.document_url.strip()
+            update_fields["caregiver_verification_status"] = "PENDING_ADMIN_APPROVAL"
+            update_fields["role"] = UserRole.CAREGIVER.value
+            
+            message = "Verification document submitted successfully. Status is set to PENDING_ADMIN_APPROVAL."
+        else:
+            raise ValidationError(f"Invalid verification type '{payload.verification_type}'.")
+
+        # Perform atomic update on current user
         query: Dict[str, Any] = {"_id": user_id}
         if ObjectId.is_valid(user_id):
             query = {"$or": [{"_id": user_id}, {"_id": ObjectId(user_id)}]}
 
-        hashed_password = get_password_hash(new_password)
-        now_iso = datetime.now(timezone.utc).isoformat()
-
-        result = await db[CollectionNames.USERS].find_one_and_update(
-            query,
-            {"$set": {"hashed_password": hashed_password, "updated_at": now_iso}},
-        )
-
-        if not result:
-            raise NotFoundException(resource_name="User", resource_id=user_id)
-
-        return ResetPasswordResponse(message="Password reset successfully. You can now log in.")
-
-    @staticmethod
-    async def verify_caregiver_code(
-        db: AsyncIOMotorDatabase,
-        caregiver_code: str,
-    ) -> CaregiverVerificationResponse:
-        """Verifies whether a 6-character pairing code belongs to an active Caregiver."""
-        clean_code = caregiver_code.strip()
-        cg_doc = await db[CollectionNames.USERS].find_one(
-            {"role": UserRole.CAREGIVER.value, "caregiver_code": clean_code}
-        )
-
-        if not cg_doc:
-            return CaregiverVerificationResponse(
-                verified=False,
-                message="Caregiver code not found or invalid",
+        if auth_repository.collection is not None:
+            updated_doc = await auth_repository.collection.find_one_and_update(
+                query,
+                {"$set": update_fields},
+                return_document=True,
             )
+        else:
+            updated_doc = None
 
-        return CaregiverVerificationResponse(
-            verified=True,
-            message="Caregiver code verified successfully",
-            caregiver_id=str(cg_doc["_id"]),
-            caregiver_name=cg_doc.get("full_name"),
-        )
+        if not updated_doc:
+            raise NotFoundException("User profile not found for updating.")
+
+        await log_audit_event(user_id, "caregiver_verified")
+
+        return {
+            "message": message,
+            "user": format_user_doc(updated_doc)
+        }
+
+auth_service = AuthService()

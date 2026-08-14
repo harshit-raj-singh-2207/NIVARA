@@ -1,113 +1,96 @@
-"""
-Authentication API Router for NIVARA backend.
-Provides REST endpoints for user registration, login authentication, token refresh, password reset, and caregiver verification.
-"""
-
-import logging
 from fastapi import APIRouter, Depends, status
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from typing import Dict, Any
 
-from app.core.database import get_database
 from app.domains.auth.schemas import (
-    CaregiverVerificationRequest,
-    CaregiverVerificationResponse,
-    ForgotPasswordRequest,
-    ForgotPasswordResponse,
     LoginRequest,
-    RefreshTokenRequest,
-    ResetPasswordRequest,
-    ResetPasswordResponse,
+    RegisterRequest,
     TokenResponse,
-    UserCreateRequest,
-    UserLoginRequest,
-    UserRegisterRequest,
+    VerifyCaregiverRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    CaregiverVerificationRequest,
+    CaregiverVerificationStandardResponse
 )
-from app.domains.auth.service import AuthService
+from app.domains.auth.service import auth_service
+from app.core.dependencies import get_current_user
 
-logger = logging.getLogger(__name__)
+router = APIRouter()
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+@router.post("/login", response_model=TokenResponse)
+async def login(credentials: LoginRequest):
+    data = await auth_service.authenticate_user(credentials.email, credentials.password)
+    return TokenResponse(
+        access_token=data["access_token"],
+        token_type=data["token_type"],
+        user=data["user"]
+    )
 
+@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def register(user_data: RegisterRequest):
+    data = await auth_service.register_user(user_data.model_dump())
+    return TokenResponse(
+        access_token=data["access_token"],
+        token_type=data["token_type"],
+        user=data["user"]
+    )
 
-@router.post(
-    "/register",
-    response_model=TokenResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Register a new user or caregiver account",
-)
-async def register(
-    payload: UserRegisterRequest,
-    db: AsyncIOMotorDatabase = Depends(get_database),
-) -> TokenResponse:
-    """
-    Registers a new account (supporting USER/PATIENT and CAREGIVER roles).
-    Hashes account password using bcrypt and generates signed JWT access and refresh tokens.
-    """
-    logger.info(f"Processing registration request for email: {payload.email}")
-    return await AuthService.register_user(db, payload)
+@router.post("/verify-caregiver", response_model=CaregiverVerificationStandardResponse)
+async def verify_caregiver(
+    payload: CaregiverVerificationRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    result = await auth_service.verify_caregiver_service(
+        user_id=current_user["id"],
+        payload=payload,
+        current_user=current_user
+    )
+    return CaregiverVerificationStandardResponse(
+        success=True,
+        message=result["message"],
+        user=result["user"]
+    )
 
+# Register route alias caregiver-verify for frontend compatibility
+@router.post("/caregiver-verify", response_model=CaregiverVerificationStandardResponse)
+async def caregiver_verify(
+    payload: CaregiverVerificationRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    result = await auth_service.verify_caregiver_service(
+        user_id=current_user["id"],
+        payload=payload,
+        current_user=current_user
+    )
+    return CaregiverVerificationStandardResponse(
+        success=True,
+        message=result["message"],
+        user=result["user"]
+    )
 
-@router.post(
-    "/login",
-    response_model=TokenResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Authenticate with email and password credentials",
-)
-async def login(
-    payload: UserLoginRequest,
-    db: AsyncIOMotorDatabase = Depends(get_database),
-) -> TokenResponse:
-    """
-    Authenticates user email and password credentials against bcrypt hashes in MongoDB.
-    Returns access and refresh JWT tokens containing user ID and role payload.
-    """
-    logger.info(f"Processing login attempt for email: {payload.email}")
-    return await AuthService.login_user(db, payload)
+@router.post("/forgot-password")
+async def forgot_password(payload: ForgotPasswordRequest):
+    await auth_service.forgot_password(payload.email)
+    return {
+        "success": True,
+        "message": "If this email is registered, a password reset code has been sent."
+    }
 
+@router.post("/reset-password")
+async def reset_password(payload: ResetPasswordRequest):
+    await auth_service.reset_password(
+        email=payload.email,
+        code=payload.code,
+        new_password=payload.new_password
+    )
+    return {
+        "success": True,
+        "message": "Password has been reset successfully."
+    }
 
-@router.post(
-    "/refresh-token",
-    response_model=TokenResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Refresh access token using a valid refresh token",
-)
-async def refresh_token(
-    payload: RefreshTokenRequest,
-    db: AsyncIOMotorDatabase = Depends(get_database),
-) -> TokenResponse:
-    """
-    Exchanges a valid JWT refresh token for a fresh pair of access and refresh tokens.
-    """
-    return await AuthService.refresh_tokens(db, payload.refresh_token)
-
-
-@router.post(
-    "/forgot-password",
-    response_model=ForgotPasswordResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Request a password reset token",
-)
-async def forgot_password(
-    payload: ForgotPasswordRequest,
-    db: AsyncIOMotorDatabase = Depends(get_database),
-) -> ForgotPasswordResponse:
-    """
-    Initiates password reset workflow by generating a reset token for the specified user email.
-    """
-    return await AuthService.forgot_password(db, payload.email)
-
-
-@router.post(
-    "/reset-password",
-    response_model=ResetPasswordResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Reset account password using reset token",
-)
-async def reset_password(
-    payload: ResetPasswordRequest,
-    db: AsyncIOMotorDatabase = Depends(get_database),
-) -> ResetPasswordResponse:
-    """
-    Resets account password using a validated reset token.
-    """
-    return await AuthService.reset_password(db, payload.token, payload.new_password)
+@router.get("/me")
+async def get_current_user_profile(current_user: dict = Depends(get_current_user)):
+    from app.domains.users.service import format_user_doc
+    return {
+        "success": True,
+        "user": format_user_doc(current_user)
+    }

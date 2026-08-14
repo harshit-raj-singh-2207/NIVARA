@@ -1,76 +1,15 @@
-/**
- * ResponseSuggestion.jsx
- * Social response suggestion chips component based on interpreted social cues.
- */
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, TouchableOpacity } from 'react-native';
 
-export const ResponseSuggestion = ({ suggestions = [], onSelectResponse }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography } = theme;
-
-  if (!suggestions || suggestions.length === 0) return null;
-
+export const ResponseSuggestion = ({ text, onSelect }) => {
   return (
-    <View style={styles.container}>
-      <Text
-        style={{
-          color: colors.textSecondary,
-          fontSize: typography.sizes.xs,
-          fontWeight: typography.weights.bold,
-          marginBottom: 6,
-        }}
-      >
-        💡 Suggested Social Responses:
-      </Text>
-
-      <View style={styles.chipsContainer}>
-        {suggestions.map((textItem, idx) => (
-          <TouchableOpacity
-            key={idx}
-            activeOpacity={0.8}
-            onPress={() => onSelectResponse && onSelectResponse(textItem)}
-            style={[
-              styles.chip,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.primary,
-                borderRadius: borderRadius.md,
-                paddingVertical: 6,
-                paddingHorizontal: 12,
-                marginBottom: 6,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: colors.primary,
-                fontSize: typography.sizes.xs,
-                fontWeight: typography.weights.bold,
-              }}
-            >
-              💬 "{textItem}"
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
+    <TouchableOpacity
+      onPress={() => onSelect(text)}
+      className="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-100 dark:border-slate-700 mb-2 shadow-sm"
+    >
+      <Text className="text-sm font-medium text-slate-800 dark:text-slate-200">"{text}"</Text>
+    </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  chipsContainer: {
-    flexDirection: 'column',
-  },
-  chip: {
-    borderWidth: 1,
-    alignSelf: 'flex-start',
-  },
-});
 
 export default ResponseSuggestion;

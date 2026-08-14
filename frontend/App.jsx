@@ -1,27 +1,17 @@
 import React from 'react';
-import { StatusBar } from 'react-native';
-import { ThemeProvider, useTheme } from './src/theme';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
-
-function AppRoot() {
-  const { theme, themeMode } = useTheme();
-  const { colors } = theme;
-
-  return (
-    <>
-      <StatusBar
-        barStyle={themeMode === 'dark' || themeMode === 'high_contrast' ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
-      />
-      <AppNavigator />
-    </>
-  );
-}
+import useUserStore from './src/store/userStore';
 
 export default function App() {
+  const { profile } = useUserStore();
+  const isDarkMode = profile?.preferences?.darkMode || false;
+
   return (
-    <ThemeProvider>
-      <AppRoot />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      <AppNavigator />
+    </SafeAreaProvider>
   );
 }

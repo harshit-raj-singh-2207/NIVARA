@@ -1,217 +1,153 @@
-/**
- * LoginScreen.jsx
- * Complete, production-grade Login Screen for NIVARA AI-Powered Safety & Communication app.
- * Handles user/caregiver authentication with input validation, loading overlays, and error toasts.
- */
-
 import React, { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useTheme } from '../../theme';
-import { AUTH_ROUTES } from '../../constants/routes';
-import useAuthStore from '../../store/authStore';
-import authApi from '../../services/api/authApi';
-import { validateEmail, validatePassword } from '../../utils/validation';
-import { handleApiError } from '../../utils/errorHandler';
-import AppHeader from '../../components/common/AppHeader';
-import AppCard from '../../components/common/AppCard';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
 import AppInput from '../../components/common/AppInput';
 import AppButton from '../../components/common/AppButton';
-import Loading from '../../components/common/Loading';
+import useAuthStore from '../../store/authStore';
+import { validateLoginForm } from '../../utils/validation';
 
 export const LoginScreen = ({ navigation }) => {
-  const { theme } = useTheme();
-  const { colors, spacing, borderRadius, typography, shadows } = theme;
+  const [email, setEmail] = useState('aarav@example.com');
+  const [password, setPassword] = useState('password123');
+  const [formErrors, setFormErrors] = useState({});
 
-  const { login, isLoading, error: authError, clearError } = useAuthStore();
+  const { login, isLoading, error } = useAuthStore();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState({});
-
-  const validateForm = () => {
-    const emailErr = validateEmail(email);
-    const passErr = validatePassword(password);
-
-    if (emailErr || passErr) {
-      setErrors({ email: emailErr, password: passErr });
-      return false;
+  const handleLogin = async () => {
+    const { isValid, errors } = validateLoginForm({ email, password });
+    if (!isValid) {
+      setFormErrors(errors);
+      return;
     }
-    setErrors({});
-    return true;
-  };
-
-  const handleLoginSubmit = async () => {
-    clearError();
-    if (!validateForm()) return;
-
-    try {
-      // Execute login via authStore which updates JWT tokens and sets isAuthenticated=true
-      await login(email.trim(), password);
-    } catch (err) {
-      handleApiError(err, 'Login Failed');
-    }
+    setFormErrors({});
+    await login(email, password);
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <AppHeader title="Sign In" subtitle="Welcome back to NIVARA Safety" />
-
-      {isLoading && <Loading overlay={true} size="large" message="Signing into your account..." />}
-
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { padding: spacing.lg }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Brand Header & Tagline */}
-        <View style={styles.brandContainer}>
-          <Text style={[styles.brandLogo, { color: colors.primary }]}>🌌 NIVARA</Text>
-          <Text style={[styles.brandSubtitle, { color: colors.textSecondary, fontSize: typography.sizes.sm }]}>
-            AI-Powered Sensory Adaptation & Emergency Safety Platform
+    <SafeAreaWrapper className="bg-[#F5F9FF] dark:bg-slate-900">
+      <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1, justifyContainer: 'center' }}>
+        {/* App Title & Subtitle */}
+        <View className="mb-8 mt-4">
+          <View className="w-14 h-14 rounded-2xl bg-[#5B8DEF] items-center justify-center mb-4 shadow-sm">
+            <Ionicons name="heart-half" size={32} color="#FFFFFF" />
+          </View>
+          <Text className="text-3xl font-black text-[#1F2937] dark:text-white">
+            Welcome to CareMate AI
+          </Text>
+          <Text className="text-sm font-semibold text-[#64748B] dark:text-slate-400 mt-1">
+            Sign in to access your personalized support workspace
           </Text>
         </View>
 
-        {/* Login Form Card */}
-        <AppCard variant="elevated" style={[shadows.small, { marginBottom: spacing.lg }]}>
-          {authError ? (
-            <View style={[styles.errorBanner, { backgroundColor: colors.status.errorBackground }]}>
-              <Text style={{ color: colors.status.error, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-                ⚠️ {authError}
-              </Text>
-            </View>
-          ) : null}
+        {/* Top level server/auth error display */}
+        {error && (
+          <View className="mb-5 p-4 rounded-2xl bg-[#E57373]/15 border border-[#E57373] flex-row items-center space-x-3">
+            <Ionicons name="alert-circle" size={22} color="#E57373" />
+            <Text className="flex-1 text-xs font-bold text-[#E57373]">
+              {error}
+            </Text>
+          </View>
+        )}
 
-          {/* Email Address Input */}
-          <AppInput
-            label="Email Address"
-            placeholder="e.g. user@nivara.app"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              if (errors.email) setErrors((prev) => ({ ...prev, email: null }));
-              if (authError) clearError();
-            }}
-            error={errors.email}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+        {/* Form Inputs */}
+        <AppInput
+          label="Email Address"
+          placeholder="e.g. aarav@example.com"
+          value={email}
+          onChangeText={(val) => {
+            setEmail(val);
+            if (formErrors.email) setFormErrors({ ...formErrors, email: null });
+          }}
+          icon="mail-outline"
+          keyboardType="email-address"
+          error={formErrors.email}
+        />
 
-          {/* Password Input */}
-          <AppInput
-            label="Password"
-            placeholder="••••••••"
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (errors.password) setErrors((prev) => ({ ...prev, password: null }));
-              if (authError) clearError();
-            }}
-            error={errors.password}
-            secureTextEntry={true}
-          />
+        <AppInput
+          label="Password"
+          placeholder="••••••••"
+          value={password}
+          onChangeText={(val) => {
+            setPassword(val);
+            if (formErrors.password) setFormErrors({ ...formErrors, password: null });
+          }}
+          secureTextEntry
+          icon="lock-closed-outline"
+          error={formErrors.password}
+        />
 
-          {/* Forgot Password Link */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => {
-              clearError();
-              navigation.navigate(AUTH_ROUTES.FORGOT_PASSWORD);
-            }}
-            style={styles.forgotBtn}
-          >
-            <Text
-              style={{
-                color: colors.primary,
-                fontSize: typography.sizes.xs,
-                fontWeight: typography.weights.bold,
+        {/* Forgot Password Link */}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ForgotPassword')}
+          accessible={true}
+          accessibilityRole="button"
+          className="self-end mb-6 py-1"
+        >
+          <Text className="text-xs font-bold text-[#5B8DEF] dark:text-blue-400">
+            Forgot Password?
+          </Text>
+        </TouchableOpacity>
+
+        {/* Sign In Action Button */}
+        <AppButton
+          title="Sign In"
+          onPress={handleLogin}
+          isLoading={isLoading}
+          isDisabled={isLoading}
+          size="lg"
+          className="mb-4"
+        />
+
+        {/* Demo Quick Logins for Hackathon Testing */}
+        <View className="mt-2 mb-6 p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <Text className="text-xs font-bold text-[#64748B] dark:text-slate-400 mb-2.5 uppercase tracking-wider">
+            ⚡ Quick Demo Accounts:
+          </Text>
+          <View className="flex-row space-x-2">
+            <TouchableOpacity
+              onPress={() => {
+                setEmail('aarav@example.com');
+                setPassword('password123');
+                login('aarav@example.com', 'password123');
               }}
+              className="flex-1 bg-[#5B8DEF]/15 py-2.5 rounded-xl items-center border border-[#5B8DEF]/30"
             >
-              Forgot Password?
-            </Text>
-          </TouchableOpacity>
+              <Text className="text-xs font-bold text-[#5B8DEF]">User Mode</Text>
+            </TouchableOpacity>
 
-          {/* Login Submit Button */}
-          <AppButton
-            title="Sign In to Account"
-            onPress={handleLoginSubmit}
-            loading={isLoading}
-            variant="primary"
-            size="large"
-            fullWidth={true}
-            style={{ marginTop: spacing.xs }}
-          />
+            <TouchableOpacity
+              onPress={() => {
+                setEmail('priya.caregiver@example.com');
+                setPassword('password123');
+                login('priya.caregiver@example.com', 'password123');
+              }}
+              className="flex-1 bg-[#6FCF97]/20 py-2.5 rounded-xl items-center border border-[#6FCF97]/40"
+            >
+              <Text className="text-xs font-bold text-[#4DB97A]">Caregiver Mode</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-          {/* Switch to Registration */}
+        {/* Footer Link to Register */}
+        <View className="flex-row justify-center items-center mt-auto py-4">
+          <Text className="text-sm font-semibold text-[#64748B]">
+            Don't have an account?
+          </Text>
           <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => {
-              clearError();
-              navigation.navigate(AUTH_ROUTES.REGISTER);
-            }}
-            style={styles.registerSwitchRow}
+            onPress={() => navigation.navigate('Register')}
+            accessible={true}
+            accessibilityRole="button"
+            className="ml-1.5 p-1"
           >
-            <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.sm }}>
-              Don't have an account yet?{' '}
-              <Text style={{ color: colors.primary, fontWeight: typography.weights.bold }}>
-                Register Account
-              </Text>
+            <Text className="text-sm font-bold text-[#5B8DEF]">
+              Create Account
             </Text>
           </TouchableOpacity>
-        </AppCard>
+        </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </SafeAreaWrapper>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingBottom: 40,
-  },
-  brandContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  brandLogo: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: 2,
-  },
-  brandSubtitle: {
-    textAlign: 'center',
-    marginTop: 6,
-    paddingHorizontal: 16,
-  },
-  errorBanner: {
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  forgotBtn: {
-    alignSelf: 'flex-end',
-    marginBottom: 16,
-    marginTop: -4,
-  },
-  registerSwitchRow: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-});
 
 export default LoginScreen;

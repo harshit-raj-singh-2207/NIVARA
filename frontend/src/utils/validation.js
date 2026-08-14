@@ -1,62 +1,54 @@
-/**
- * Form Validation Utilities for NIVARA frontend.
- */
-
-export const validateEmail = (email) => {
-  if (!email || !email.trim()) {
-    return 'Email address is required';
-  }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email.trim())) {
-    return 'Please enter a valid email address';
-  }
-  return null;
+export const isValidEmail = (email) => {
+  if (!email) return false;
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(String(email).toLowerCase().trim());
 };
 
-export const validatePassword = (password) => {
-  if (!password) {
-    return 'Password is required';
-  }
-  if (password.length < 8) {
-    return 'Password must be at least 8 characters long';
-  }
-  return null;
+export const isValidPhone = (phone) => {
+  if (!phone) return false;
+  const clean = String(phone).replace(/[\s\-()]/g, '');
+  return clean.length >= 7 && clean.length <= 15;
 };
 
-export const validateFullName = (name) => {
-  if (!name || !name.trim()) {
-    return 'Full name is required';
-  }
-  if (name.trim().length < 2) {
-    return 'Name must be at least 2 characters long';
-  }
-  return null;
+export const isValidPassword = (password) => {
+  return typeof password === 'string' && password.length >= 6;
 };
 
-export const validateCaregiverCode = (code) => {
-  if (!code || !code.trim()) {
-    return 'Caregiver code is required';
-  }
-  const cleanCode = code.trim().toUpperCase();
-  if (!cleanCode.startsWith('CG-') && cleanCode.length < 6) {
-    return 'Invalid caregiver code format (e.g. CG-A1B2C3)';
-  }
-  return null;
+export const isValidName = (name) => {
+  return typeof name === 'string' && name.trim().length >= 2;
 };
 
-export const validatePhoneNumber = (phone) => {
-  if (!phone) return null; // Optional
-  const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
-  if (!phoneRegex.test(phone.trim())) {
-    return 'Please enter a valid phone number';
-  }
-  return null;
+export const isValidVerificationCode = (code) => {
+  return typeof code === 'string' && /^\d{6}$/.test(code.trim());
 };
 
-export default {
-  validateEmail,
-  validatePassword,
-  validateFullName,
-  validateCaregiverCode,
-  validatePhoneNumber,
+export const validateLoginForm = ({ email, password }) => {
+  const errors = {};
+  if (!email || !isValidEmail(email)) {
+    errors.email = 'Please enter a valid email address.';
+  }
+  if (!password || !isValidPassword(password)) {
+    errors.password = 'Password must be at least 6 characters.';
+  }
+  return { isValid: Object.keys(errors).length === 0, errors };
+};
+
+export const validateRegisterForm = ({ name, email, password, confirmPassword, role }) => {
+  const errors = {};
+  if (!isValidName(name)) {
+    errors.name = 'Full name must be at least 2 characters.';
+  }
+  if (!isValidEmail(email)) {
+    errors.email = 'Please enter a valid email address.';
+  }
+  if (!isValidPassword(password)) {
+    errors.password = 'Password must be at least 6 characters.';
+  }
+  if (password !== confirmPassword) {
+    errors.confirmPassword = 'Passwords do not match.';
+  }
+  if (!role) {
+    errors.role = 'Please select a account role.';
+  }
+  return { isValid: Object.keys(errors).length === 0, errors };
 };

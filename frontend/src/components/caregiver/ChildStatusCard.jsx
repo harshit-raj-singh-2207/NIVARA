@@ -1,92 +1,39 @@
-/**
- * ChildStatusCard.jsx
- * Dependent child status profile header card component for caregiver monitoring.
- */
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AppCard from '../common/AppCard';
 import Avatar from '../common/Avatar';
+import Badge from '../common/Badge';
 
-export const ChildStatusCard = ({ dependent, onPress }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
-  if (!dependent) return null;
-
-  const isOnline = dependent.isOnline ?? true;
-
+export const ChildStatusCard = ({ child }) => {
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={onPress}
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: colors.border,
-          borderRadius: borderRadius.lg,
-          padding: 12,
-          marginBottom: 12,
-          ...shadows.small,
-        },
-      ]}
-    >
-      <View style={styles.row}>
-        <Avatar name={dependent.name} size="medium" />
-
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <View style={styles.titleRow}>
-            <Text
-              style={{
-                color: colors.text,
-                fontSize: typography.sizes.md,
-                fontWeight: typography.weights.bold,
-              }}
-            >
-              {dependent.name}
-            </Text>
-            <View
-              style={[
-                styles.statusDot,
-                {
-                  backgroundColor: isOnline ? colors.status.success : colors.textMuted,
-                  borderRadius: borderRadius.full,
-                },
-              ]}
-            />
+    <AppCard>
+      <View className="flex-row items-center justify-between mb-3">
+        <View className="flex-row items-center space-x-3">
+          <Avatar source={child?.avatar} name={child?.name} size="md" isOnline={child?.isDeviceConnected} />
+          <View className="ml-3">
+            <Text className="text-base font-bold text-slate-900 dark:text-white">{child?.name || 'Child'}</Text>
+            <Text className="text-xs text-slate-500 dark:text-slate-400">Mood: {child?.currentMood || 'Calm'}</Text>
           </View>
-
-          <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs, marginTop: 2 }}>
-            Role: Dependent User • Age: {dependent.age || '12'}
-          </Text>
-
-          <Text style={{ color: colors.primary, fontSize: 11, fontWeight: 'bold', marginTop: 4 }}>
-            State: {dependent.emotionalState || 'Calm'} • Noise: {dependent.noiseDb || '72'} dB
-          </Text>
+        </View>
+        <Badge label={child?.inSafeZone ? 'In Safe Zone' : 'Outside'} variant={child?.inSafeZone ? 'success' : 'warning'} />
+      </View>
+      <View className="flex-row justify-between bg-slate-50 dark:bg-slate-900 p-3 rounded-xl">
+        <View className="items-center">
+          <Text className="text-[10px] text-slate-400">Heart Rate</Text>
+          <Text className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">{child?.heartRate || 76} BPM</Text>
+        </View>
+        <View className="items-center">
+          <Text className="text-[10px] text-slate-400">Band Battery</Text>
+          <Text className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">{child?.batteryLevel || 88}%</Text>
+        </View>
+        <View className="items-center">
+          <Text className="text-[10px] text-slate-400">Routines</Text>
+          <Text className="text-sm font-bold text-indigo-600 mt-0.5">{child?.routineProgress || '3/4'}</Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </AppCard>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  statusDot: {
-    width: 10,
-    height: 10,
-  },
-});
 
 export default ChildStatusCard;

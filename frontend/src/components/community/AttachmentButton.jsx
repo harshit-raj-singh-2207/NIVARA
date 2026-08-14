@@ -1,34 +1,13 @@
-/**
- * AttachmentButton.jsx
- * Media attachment trigger button for picking photos/documents in chat.
- */
-
 import React from 'react';
-import { StyleSheet, TouchableOpacity, Text } from 'react-native';
-import { BRAND_COLORS } from '../../constants/colors';
-import { BORDER_RADIUS, SPACING } from '../../constants/spacing';
+import { TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-export const AttachmentButton = ({ onPress, icon = '📎' }) => {
+export const AttachmentButton = ({ onPress }) => {
   return (
-    <TouchableOpacity style={styles.button} onPress={onPress} activeOpacity={0.7}>
-      <Text style={styles.icon}>{icon}</Text>
+    <TouchableOpacity onPress={onPress} className="p-2 rounded-full bg-slate-100 dark:bg-slate-800">
+      <Ionicons name="attach-outline" size={20} color="#6366F1" />
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  button: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.xs,
-  },
-  icon: {
-    fontSize: 18,
-  },
-});
 
 export default AttachmentButton;

@@ -1,77 +1,46 @@
 """
-Communication Domain Beanie Document Models.
-Defines AAC Boards, Communication Logs, and Custom Phrase documents.
+AAC Communication & Emotion Record Beanie Models for MongoDB persistence in NIVARA backend.
 """
 
 from datetime import datetime
-from typing import List, Optional
-from beanie import Document, Indexed
-from pydantic import BaseModel, Field
-
-from app.core.constants import CollectionNames
+from typing import Optional, List
+from beanie import Document
+from pydantic import Field
 
 
-class AACBoardItem(BaseModel):
-    """Embedded symbol card item within an AAC board."""
-    id: str = Field(..., description="Item symbol ID")
-    label: str = Field(..., description="Text label for item")
-    symbol: str = Field(..., description="Emoji or symbol icon")
-    category: str = Field(default="general", description="Category: urgent, sensory, basic, emotion")
-    audio_url: Optional[str] = Field(default=None, description="TTS or voice recording audio URL")
-
-
-class AACBoard(Document):
-    """
-    Beanie Document model representing customized AAC symbol boards.
-    """
-    user_id: Indexed(str)
-    title: str = Field(..., description="AAC board title")
-    icon: str = Field(default="💬", description="Board icon")
-    items: List[AACBoardItem] = Field(default_factory=list)
-    is_default: bool = Field(default=False)
+class AACSymbol(Document):
+    symbol_id: str
+    label: str
+    category: str  # NEEDS, FEELINGS, ACTIVITIES, PEOPLE, QUICK
+    emoji_or_icon: str
+    speech_phrase: str
+    background_color: str = "#E0F2FE"
+    border_color: str = "#3B82F6"
+    is_custom: bool = False
+    created_by_user_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
-        name = CollectionNames.AAC_BOARDS
-        indexes = [
-            "user_id",
-            "is_default",
-        ]
+        name = "aac_symbols"
 
 
 class CommunicationLog(Document):
-    """
-    Beanie Document model tracking user AAC interaction logs and simplified sentences.
-    """
-    user_id: Indexed(str)
-    message_text: str = Field(..., description="Original input text or selected symbol phrase")
-    simplified_text: Optional[str] = Field(default=None, description="AI simplified text version")
-    input_type: str = Field(default="symbol", description="Input mode: symbol, text, voice")
-    emotion_context: Optional[str] = Field(default="calm", description="Active user emotion state")
+    user_id: str
+    selected_symbols: List[str]
+    constructed_phrase: str
+    communication_mode: str = "AAC_GRID"  # AAC_GRID, EMOTION_PICKER, SPEECH_TTS
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
-        name = CollectionNames.COMMUNICATION_LOGS
-        indexes = [
-            "user_id",
-            "timestamp",
-        ]
+        name = "communication_logs"
 
 
-class CustomPhrase(Document):
-    """
-    Beanie Document model storing user-saved quick communication phrases.
-    """
-    user_id: Indexed(str)
-    phrase_text: str = Field(..., description="Saved custom phrase string")
-    category: str = Field(default="General", description="Phrase category")
-    usage_count: int = Field(default=0, description="Frequency counter for sorting")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+class EmotionRecord(Document):
+    user_id: str
+    emotion: str  # happy, calm, anxious, overwhelmed, tired, angry
+    intensity_level: int = 3  # 1 to 5 scale
+    notes_or_trigger: Optional[str] = None
+    logged_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
-        name = CollectionNames.CUSTOM_PHRASES
-        indexes = [
-            "user_id",
-            "category",
-        ]
+        name = "emotion_records"

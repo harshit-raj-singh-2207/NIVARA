@@ -1,110 +1,32 @@
-/**
- * CommunityPost.jsx
- * Social community post feed component with likes, comments, and topic categories.
- */
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AppCard from '../common/AppCard';
 import Avatar from '../common/Avatar';
 
-export const CommunityPost = ({ post, onLike, onComment, onPress }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
-  if (!post) return null;
-
-  const isLiked = post.isLiked ?? false;
-
+export const CommunityPost = ({ post, onLike, onComment }) => {
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          borderRadius: borderRadius.lg,
-          padding: 12,
-          marginBottom: 10,
-          ...shadows.small,
-        },
-      ]}
-    >
-      {/* Author Header */}
-      <View style={styles.authorRow}>
-        <Avatar name={post.authorName} size="small" />
-        <View style={{ flex: 1, marginLeft: 8 }}>
-          <Text style={{ color: colors.text, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-            {post.authorName || 'Anonymous Community Member'}
-          </Text>
-          <Text style={{ color: colors.textMuted, fontSize: 10 }}>
-            {post.time || '2 hours ago'} • {post.category || 'General'}
-          </Text>
+    <AppCard>
+      <View className="flex-row items-center space-x-3 mb-3">
+        <Avatar source={post.authorAvatar} name={post.authorName} size="md" />
+        <View className="ml-3 flex-1">
+          <Text className="text-base font-bold text-slate-900 dark:text-white">{post.authorName}</Text>
+          <Text className="text-xs text-slate-500 dark:text-slate-400">{post.authorRole} • {post.createdAt}</Text>
         </View>
       </View>
-
-      {/* Post Text Content */}
-      <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
-        <Text
-          style={{
-            color: colors.text,
-            fontSize: typography.sizes.sm,
-            lineHeight: 20,
-            marginTop: 8,
-            marginBottom: 10,
-          }}
-        >
-          {post.content}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Action Footer (Likes, Comments) */}
-      <View style={[styles.footerRow, { borderTopColor: colors.divider }]}>
-        <TouchableOpacity
-          onPress={() => onLike && onLike(post.id)}
-          style={styles.actionBtn}
-        >
-          <Text style={{ fontSize: 16, marginRight: 4 }}>{isLiked ? '❤️' : '🤍'}</Text>
-          <Text style={{ color: isLiked ? colors.status.error : colors.textSecondary, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-            {post.likes || 0} Likes
-          </Text>
+      <Text className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed mb-3">{post.content}</Text>
+      <View className="flex-row items-center space-x-4 border-t border-slate-100 dark:border-slate-700/60 pt-3 mt-1">
+        <TouchableOpacity onPress={() => onLike(post.id)} className="flex-row items-center space-x-1.5">
+          <Ionicons name={post.isLiked ? 'heart' : 'heart-outline'} size={20} color={post.isLiked ? '#EF4444' : '#64748B'} />
+          <Text className="text-xs font-semibold text-slate-600 dark:text-slate-300 ml-1">{post.likesCount}</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => onComment && onComment(post.id)}
-          style={styles.actionBtn}
-        >
-          <Text style={{ fontSize: 16, marginRight: 4 }}>💬</Text>
-          <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-            {post.commentsCount || 0} Comments
-          </Text>
+        <TouchableOpacity onPress={() => onComment(post.id)} className="flex-row items-center space-x-1.5 ml-4">
+          <Ionicons name="chatbubble-outline" size={18} color="#64748B" />
+          <Text className="text-xs font-semibold text-slate-600 dark:text-slate-300 ml-1">{post.commentsCount}</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </AppCard>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-  },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingTop: 8,
-    borderTopWidth: 1,
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-});
 
 export default CommunityPost;

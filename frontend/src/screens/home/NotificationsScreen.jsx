@@ -1,468 +1,165 @@
-/**
- * NotificationsScreen.jsx
- * Complete, production-grade Notifications & Alerts Screen for NIVARA.
- * Handles emergency alerts, sensory warnings, and routine reminders with categorized filters and interactive actions.
- */
-
-import React, { useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useTheme } from '../../theme';
-import useNotificationStore from '../../store/notificationStore';
-import userApi from '../../services/api/userApi';
-import { handleApiError, showErrorAlert } from '../../utils/errorHandler';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
 import AppHeader from '../../components/common/AppHeader';
 import AppCard from '../../components/common/AppCard';
-import AppButton from '../../components/common/AppButton';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
+import useNotificationStore from '../../store/notificationStore';
+
+const CATEGORIES = ['All', 'Emergency', 'Caregiver', 'System', 'General'];
 
 export const NotificationsScreen = ({ navigation }) => {
-  const { theme } = useTheme();
-  const { colors, spacing, borderRadius, typography, shadows } = theme;
-
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const {
     notifications,
-    unreadCount,
+    isLoading,
+    error,
     fetchNotifications,
     markAsRead,
     markAllAsRead,
-    deleteNotification,
   } = useNotificationStore();
 
-  // Active Category Filter: 'all' | 'emergency' | 'sensory' | 'routine'
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const filterCategories = [
-    { id: 'all', label: 'All' },
-    { id: 'emergency', label: 'Emergency / Safety' },
-    { id: 'sensory', label: 'Sensory' },
-    { id: 'routine', label: 'Routines' },
-  ];
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await fetchNotifications();
-    } catch (err) {
-      handleApiError(err, 'Failed to refresh notifications');
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   const filteredNotifications = notifications.filter((item) => {
-    if (activeFilter === 'all') return true;
-    if (activeFilter === 'emergency') return item.type === 'emergency' || item.type === 'safety';
-    if (activeFilter === 'sensory') return item.type === 'sensory';
-    if (activeFilter === 'routine') return item.type === 'routine';
-    return true;
+    if (selectedCategory === 'All') return true;
+    return item.category?.toUpperCase() === selectedCategory.toUpperCase();
   });
 
-  const handleViewLocation = (item) => {
-    Alert.alert(
-      '📍 GPS Band Location Snapshot',
-      `Alert: ${item.title}\n\nLocation: ${item.location || 'Home Geofence (Safe Zone)'}\nCoordinates: 37.7749° N, 122.4194° W\nTimestamp: ${item.timestamp}`,
-      [
-        {
-          text: 'Close',
-          style: 'cancel',
-        },
-      ]
-    );
-  };
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const handleItemPress = (item) => {
-    if (!item.read) {
-      markAsRead(item.id);
+  const getCategoryColor = (cat) => {
+    switch (cat?.toUpperCase()) {
+      case 'EMERGENCY': return 'text-[#E57373] bg-[#E57373]/15 border-[#E57373]/30';
+      case 'CAREGIVER': return 'text-[#4DB97A] bg-[#6FCF97]/20 border-[#6FCF97]/40';
+      case 'SYSTEM': return 'text-[#5B8DEF] bg-[#5B8DEF]/15 border-[#5B8DEF]/30';
+      case 'GENERAL':
+      default: return 'text-slate-600 bg-slate-100 border-slate-200';
     }
-  };
-
-  const renderNotificationCard = ({ item }) => {
-    const isEmergency = item.type === 'emergency';
-    const isSafety = item.type === 'safety';
-    const isSensory = item.type === 'sensory';
-    const isRoutine = item.type === 'routine';
-
-    // Determine card accent colors
-    let cardBg = colors.cardBackground;
-    let borderColor = colors.border;
-    let icon = '🔔';
-    let categoryTag = 'GENERAL';
-    let tagColor = colors.primary;
-
-    if (isEmergency) {
-      cardBg = colors.status.errorBackground;
-      borderColor = colors.status.error;
-      icon = '🚨';
-      categoryTag = 'EMERGENCY SOS';
-      tagColor = colors.status.error;
-    } else if (isSafety) {
-      cardBg = colors.status.successBackground;
-      borderColor = colors.status.success;
-      icon = '🛡️';
-      categoryTag = 'SAFETY & GEOFENCE';
-      tagColor = colors.status.success;
-    } else if (isSensory) {
-      cardBg = colors.status.warningBackground;
-      borderColor = colors.status.warning;
-      icon = '🔊';
-      categoryTag = 'SENSORY ALERT';
-      tagColor = colors.status.warning;
-    } else if (isRoutine) {
-      cardBg = colors.surfaceSubtle;
-      borderColor = colors.primaryLight;
-      icon = '📅';
-      categoryTag = 'ROUTINE TRANSITION';
-      tagColor = colors.primary;
-    }
-
-    return (
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={() => handleItemPress(item)}
-        style={{ marginBottom: spacing.sm }}
-      >
-        <AppCard
-          variant={isEmergency ? 'elevated' : 'bordered'}
-          style={[
-            styles.cardContainer,
-            {
-              backgroundColor: cardBg,
-              borderColor: borderColor,
-              borderWidth: item.read ? 1 : 2,
-              opacity: item.read ? 0.85 : 1,
-            },
-          ]}
-        >
-          {/* Card Header Tag & Timestamp */}
-          <View style={styles.cardHeader}>
-            <View style={styles.tagRow}>
-              <Text style={{ fontSize: 18, marginRight: 6 }}>{icon}</Text>
-              <View
-                style={[
-                  styles.categoryBadge,
-                  {
-                    backgroundColor: tagColor,
-                    borderRadius: borderRadius.sm,
-                  },
-                ]}
-              >
-                <Text style={styles.categoryBadgeText}>{categoryTag}</Text>
-              </View>
-
-              {!item.read && (
-                <View
-                  style={[
-                    styles.unreadDot,
-                    {
-                      backgroundColor: colors.status.error,
-                      borderRadius: borderRadius.full,
-                    },
-                  ]}
-                />
-              )}
-            </View>
-
-            <Text style={{ color: colors.textMuted, fontSize: typography.sizes.xs }}>
-              {item.timestamp}
-            </Text>
-          </View>
-
-          {/* Title & Description */}
-          <Text
-            style={[
-              styles.cardTitle,
-              {
-                color: colors.text,
-                fontSize: typography.sizes.md,
-                fontWeight: typography.weights.bold,
-                marginTop: spacing.xs,
-                marginBottom: 4,
-              },
-            ]}
-          >
-            {item.title}
-          </Text>
-
-          <Text
-            style={[
-              styles.cardMessage,
-              {
-                color: colors.textSecondary,
-                fontSize: typography.sizes.sm,
-                lineHeight: 20,
-              },
-            ]}
-          >
-            {item.message}
-          </Text>
-
-          {/* Location details for Safety/Emergency */}
-          {(isEmergency || isSafety) && item.location ? (
-            <View
-              style={[
-                styles.locationBox,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  borderRadius: borderRadius.sm,
-                  padding: spacing.xs + 2,
-                  marginTop: spacing.xs,
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  color: colors.text,
-                  fontSize: typography.sizes.xs,
-                  fontWeight: typography.weights.semibold,
-                }}
-              >
-                📍 GPS Location: {item.location}
-              </Text>
-            </View>
-          ) : null}
-
-          {/* Sensory Comfort Suggestion Box */}
-          {isSensory && (
-            <View
-              style={[
-                styles.comfortBox,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.status.warning,
-                  borderRadius: borderRadius.sm,
-                  padding: spacing.xs + 2,
-                  marginTop: spacing.xs,
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  color: colors.status.warning,
-                  fontSize: typography.sizes.xs,
-                  fontWeight: typography.weights.bold,
-                }}
-              >
-                💡 Comfort Tip: Move to a low-sensory room or activate noise suppression.
-              </Text>
-            </View>
-          )}
-
-          {/* Action Buttons Row */}
-          <View style={[styles.actionsRow, { marginTop: spacing.sm }]}>
-            {(isEmergency || isSafety) && (
-              <AppButton
-                title="View Location"
-                size="small"
-                variant="outline"
-                fullWidth={false}
-                onPress={() => handleViewLocation(item)}
-                style={{ marginRight: spacing.xs }}
-              />
-            )}
-
-            <TouchableOpacity
-              onPress={() => deleteNotification(item.id)}
-              style={styles.dismissButton}
-            >
-              <Text
-                style={{
-                  color: colors.textMuted,
-                  fontSize: typography.sizes.xs,
-                  fontWeight: typography.weights.medium,
-                }}
-              >
-                Dismiss
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </AppCard>
-      </TouchableOpacity>
-    );
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaWrapper className="bg-[#F5F9FF] dark:bg-slate-900">
       <AppHeader
-        title="Notifications"
-        subtitle={unreadCount > 0 ? `${unreadCount} unread alert(s)` : 'All caught up'}
-        showBack={true}
-        onBackPress={() => (navigation ? navigation.goBack() : null)}
-        rightComponent={
+        title="Notification Center"
+        subtitle={`${unreadCount} unread alert${unreadCount === 1 ? '' : 's'}`}
+        showBack
+        onBackPress={() => navigation.goBack()}
+        rightAction={
           unreadCount > 0 ? (
-            <TouchableOpacity onPress={markAllAsRead} style={styles.markReadButton}>
-              <Text
-                style={{
-                  color: colors.primary,
-                  fontSize: typography.sizes.xs,
-                  fontWeight: typography.weights.bold,
-                }}
-              >
-                Mark All Read
-              </Text>
+            <TouchableOpacity
+              onPress={markAllAsRead}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Mark all notifications as read"
+              className="px-3 py-1.5 rounded-xl bg-[#5B8DEF]/15 border border-[#5B8DEF]/30"
+            >
+              <Text className="text-xs font-bold text-[#5B8DEF]">Mark All Read</Text>
             </TouchableOpacity>
           ) : null
         }
       />
 
-      {loading && <Loading overlay={true} size="large" message="Loading notifications..." />}
-
-      {/* Filter Category Segmented Chips */}
-      <View style={[styles.filterContainer, { paddingHorizontal: spacing.md, paddingVertical: spacing.sm }]}>
-        <View style={[styles.filterRow, { backgroundColor: colors.surfaceSubtle, borderRadius: borderRadius.lg, padding: 4 }]}>
-          {filterCategories.map((cat) => (
+      {/* Category Pills */}
+      <View className="py-3 px-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row space-x-2">
+          {CATEGORIES.map((cat) => (
             <TouchableOpacity
-              key={cat.id}
-              activeOpacity={0.8}
-              onPress={() => setActiveFilter(cat.id)}
-              style={[
-                styles.filterChip,
-                { borderRadius: borderRadius.md },
-                activeFilter === cat.id && {
-                  backgroundColor: colors.surface,
-                  ...shadows.small,
-                },
-              ]}
+              key={cat}
+              onPress={() => setSelectedCategory(cat)}
+              className={`px-4 py-2 rounded-2xl mr-2 border ${
+                selectedCategory === cat
+                  ? 'bg-[#5B8DEF] border-[#5B8DEF]'
+                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+              }`}
             >
               <Text
-                style={[
-                  styles.filterText,
-                  {
-                    color: activeFilter === cat.id ? colors.primary : colors.textMuted,
-                    fontWeight: activeFilter === cat.id ? typography.weights.bold : typography.weights.medium,
-                    fontSize: typography.sizes.xs,
-                  },
-                ]}
+                className={`text-xs font-bold ${
+                  selectedCategory === cat ? 'text-white' : 'text-[#64748B] dark:text-slate-300'
+                }`}
               >
-                {cat.label}
+                {cat}
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
       </View>
 
-      {/* Notifications List */}
-      <FlatList
-        data={filteredNotifications}
-        keyExtractor={(item) => item.id}
-        renderItem={renderNotificationCard}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
-        ]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyState
-            icon="🔔"
-            title="No Notifications"
-            description={
-              activeFilter === 'all'
-                ? "You're all caught up! Important safety, sensory, and routine alerts will appear here."
-                : `No notifications found in "${filterCategories.find((c) => c.id === activeFilter)?.label}" category.`
-            }
-            actionTitle={activeFilter !== 'all' ? 'Show All Notifications' : 'Refresh Alerts'}
-            onActionPress={
-              activeFilter !== 'all' ? () => setActiveFilter('all') : handleRefresh
-            }
-          />
-        }
-      />
-    </View>
+      {/* Content Area */}
+      {isLoading ? (
+        <Loading text="Loading notifications..." />
+      ) : error ? (
+        <View className="flex-1 items-center justify-center p-6 text-center">
+          <Ionicons name="alert-circle" size={48} color="#E57373" />
+          <Text className="text-base font-bold text-[#1F2937] dark:text-white mt-3">
+            Unable to load notifications
+          </Text>
+          <Text className="text-xs text-[#64748B] mt-1 mb-4 text-center">{error}</Text>
+          <TouchableOpacity
+            onPress={fetchNotifications}
+            className="px-5 py-2.5 rounded-xl bg-[#5B8DEF]"
+          >
+            <Text className="text-white font-bold text-xs">Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : filteredNotifications.length === 0 ? (
+        <EmptyState
+          icon="notifications-off-outline"
+          title="No Notifications"
+          description={`No ${selectedCategory === 'All' ? '' : selectedCategory.toLowerCase()} alerts available at the moment.`}
+        />
+      ) : (
+        <ScrollView
+          contentContainerStyle={{ padding: 16 }}
+          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchNotifications} />}
+        >
+          {filteredNotifications.map((item) => (
+            <AppCard
+              key={item.id}
+              onPress={() => markAsRead(item.id)}
+              className={`flex-row items-start p-4 ${
+                !item.read ? 'bg-white border-[#5B8DEF]/40 dark:bg-slate-800' : 'bg-slate-50/60 dark:bg-slate-850'
+              }`}
+            >
+              <View className="w-10 h-10 rounded-2xl bg-[#5B8DEF]/15 items-center justify-center mr-3.5 mt-0.5">
+                <Ionicons name={item.icon || 'notifications'} size={20} color="#5B8DEF" />
+              </View>
+
+              <View className="flex-1 mr-2">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-sm font-black text-[#1F2937] dark:text-white flex-1 mr-2" numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  <Text className="text-[11px] font-semibold text-[#64748B]">
+                    {item.time}
+                  </Text>
+                </View>
+
+                <Text className="text-xs text-[#64748B] dark:text-slate-300 leading-relaxed mb-2">
+                  {item.message}
+                </Text>
+
+                <View className="flex-row items-center space-x-2">
+                  <View className={`px-2.5 py-0.5 rounded-md border ${getCategoryColor(item.category)}`}>
+                    <Text className="text-[10px] font-black uppercase">
+                      {item.category || 'General'}
+                    </Text>
+                  </View>
+                  {!item.read && (
+                    <View className="w-2 h-2 rounded-full bg-[#5B8DEF]" />
+                  )}
+                </View>
+              </View>
+            </AppCard>
+          ))}
+        </ScrollView>
+      )}
+    </SafeAreaWrapper>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  markReadButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  filterContainer: {
-    width: '100%',
-  },
-  filterRow: {
-    flexDirection: 'row',
-  },
-  filterChip: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterText: {
-    textAlign: 'center',
-  },
-  listContent: {
-    paddingTop: 8,
-  },
-  cardContainer: {
-    padding: 12,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  tagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  categoryBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  categoryBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    marginLeft: 6,
-  },
-  cardTitle: {
-    textAlign: 'left',
-  },
-  cardMessage: {
-    textAlign: 'left',
-  },
-  locationBox: {
-    borderWidth: 1,
-  },
-  comfortBox: {
-    borderWidth: 1,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dismissButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-});
 
 export default NotificationsScreen;

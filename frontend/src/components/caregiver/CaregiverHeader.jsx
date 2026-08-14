@@ -1,98 +1,17 @@
-/**
- * CaregiverHeader.jsx
- * Header component with linked dependent child selector tab bar.
- */
-
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text } from 'react-native';
 import Avatar from '../common/Avatar';
 
-export const CaregiverHeader = ({
-  dependents = [],
-  activeDependentId,
-  onSelectDependent,
-  caregiverName = 'Caregiver Dashboard',
-}) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
+export const CaregiverHeader = ({ caregiverName, title = 'Caregiver Dashboard' }) => {
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-      <View style={styles.topRow}>
-        <View>
-          <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-            CAREGIVER HUB
-          </Text>
-          <Text style={{ color: colors.text, fontSize: typography.sizes.lg, fontWeight: typography.weights.bold }}>
-            {caregiverName}
-          </Text>
-        </View>
+    <View className="flex-row items-center justify-between p-4 bg-indigo-600 rounded-b-3xl mb-4">
+      <View>
+        <Text className="text-xs text-indigo-200 uppercase tracking-wider font-semibold">Welcome back</Text>
+        <Text className="text-xl font-bold text-white mt-0.5">{caregiverName || 'Priya Sharma'}</Text>
       </View>
-
-      {/* Linked Dependents Horizontal Selector Pills */}
-      {dependents.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          {dependents.map((child) => {
-            const isSelected = activeDependentId === child.id;
-            return (
-              <TouchableOpacity
-                key={child.id}
-                activeOpacity={0.8}
-                onPress={() => onSelectDependent && onSelectDependent(child.id)}
-                style={[
-                  styles.pill,
-                  {
-                    backgroundColor: isSelected ? colors.primary : colors.surfaceSubtle,
-                    borderColor: isSelected ? colors.primary : colors.border,
-                    borderRadius: borderRadius.full,
-                    paddingVertical: 6,
-                    paddingHorizontal: 12,
-                    marginRight: 8,
-                    ...shadows.small,
-                  },
-                ]}
-              >
-                <Text style={{ fontSize: 16, marginRight: 6 }}>{child.avatar || '👦'}</Text>
-                <Text
-                  style={{
-                    color: isSelected ? '#FFFFFF' : colors.text,
-                    fontSize: typography.sizes.xs,
-                    fontWeight: isSelected ? typography.weights.bold : typography.weights.medium,
-                  }}
-                >
-                  {child.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
+      <Avatar name={caregiverName || 'Priya'} size="md" />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  scrollContent: {
-    paddingVertical: 4,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-});
 
 export default CaregiverHeader;

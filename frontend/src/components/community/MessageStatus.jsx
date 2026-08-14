@@ -1,32 +1,10 @@
-/**
- * MessageStatus.jsx
- * Message delivery/read status indicator checkmarks for chat.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { BRAND_COLORS } from '../../constants/colors';
+import { Ionicons } from '@expo/vector-icons';
 
-export const MessageStatus = ({ status = 'sent' }) => {
-  let icon = '✓';
-  let color = '#94A3B8';
-
-  if (status === 'delivered') {
-    icon = '✓✓';
-    color = '#94A3B8';
-  } else if (status === 'read') {
-    icon = '✓✓';
-    color = BRAND_COLORS.primary;
-  }
-
-  return <Text style={[styles.statusText, { color }]}>{icon}</Text>;
+export const MessageStatus = ({ status = 'SENT' }) => {
+  if (status === 'READ') return <Ionicons name="checkmark-done" size={16} color="#6366F1" />;
+  if (status === 'DELIVERED') return <Ionicons name="checkmark-done" size={16} color="#94A3B8" />;
+  return <Ionicons name="checkmark" size={16} color="#94A3B8" />;
 };
-
-const styles = StyleSheet.create({
-  statusText: {
-    fontSize: 10,
-    marginLeft: 4,
-  },
-});
 
 export default MessageStatus;

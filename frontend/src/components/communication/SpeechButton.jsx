@@ -1,81 +1,23 @@
-/**
- * SpeechButton.jsx
- * Text-to-Speech (TTS) speaker button for reading sentences aloud.
- */
+import React from 'react';
+import { TouchableOpacity, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import textToSpeech from '../../services/audio/textToSpeech';
 
-import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { useTheme } from '../../theme';
-
-export const SpeechButton = ({
-  text,
-  onPress,
-  size = 'medium',
-  disabled = false,
-  style,
-}) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography } = theme;
-  const [speaking, setSpeaking] = useState(false);
-
+export const SpeechButton = ({ text, size = 'md' }) => {
   const handleSpeak = () => {
-    if (!text && !onPress) return;
-
-    if (onPress) {
-      onPress(text);
-      return;
+    if (text) {
+      textToSpeech.speak(text);
     }
-
-    setSpeaking(true);
-    // Simulate Text-to-Speech synthesis output
-    Alert.alert('🔊 Text-to-Speech Synthesis', `Speaking aloud: "${text}"`, [
-      { text: 'Stop Speech', onPress: () => setSpeaking(false) },
-    ]);
-    setTimeout(() => setSpeaking(false), 2000);
   };
-
-  const isSmall = size === 'small';
-  const isLarge = size === 'large';
 
   return (
     <TouchableOpacity
-      activeOpacity={0.8}
-      disabled={disabled || (!text && !onPress)}
       onPress={handleSpeak}
-      style={[
-        styles.container,
-        {
-          backgroundColor: speaking ? colors.status.success : colors.primary,
-          borderRadius: borderRadius.full,
-          paddingHorizontal: isSmall ? 10 : isLarge ? 18 : 14,
-          paddingVertical: isSmall ? 6 : isLarge ? 12 : 8,
-          opacity: disabled || (!text && !onPress) ? 0.5 : 1,
-        },
-        style,
-      ]}
+      className="bg-indigo-600 active:bg-indigo-700 p-3 rounded-full flex-row items-center justify-center shadow-sm"
     >
-      <Text style={{ fontSize: isSmall ? 14 : isLarge ? 20 : 16, marginRight: 6 }}>
-        {speaking ? '📢' : '🔊'}
-      </Text>
-      <Text
-        style={{
-          color: '#FFFFFF',
-          fontSize: isSmall ? typography.sizes.xs : typography.sizes.sm,
-          fontWeight: typography.weights.bold,
-        }}
-      >
-        {speaking ? 'Speaking...' : 'Speak'}
-      </Text>
+      <Ionicons name="volume-high" size={size === 'lg' ? 24 : 20} color="#FFFFFF" />
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
 
 export default SpeechButton;

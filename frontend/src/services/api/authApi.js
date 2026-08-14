@@ -1,17 +1,13 @@
-/**
- * Authentication API Service functions for NIVARA frontend.
- */
-
 import apiClient from './apiClient';
-import { ENDPOINTS } from '../../constants/api';
+import API_ENDPOINTS from '../../constants/api';
 
 export const authApi = {
-  register: (data) => apiClient.post(ENDPOINTS.REGISTER, data),
-  login: (credentials) => apiClient.post(ENDPOINTS.LOGIN, credentials),
-  refreshToken: (refreshToken) => apiClient.post(ENDPOINTS.REFRESH_TOKEN, { refresh_token: refreshToken }),
-  verifyCaregiverCode: (code) => apiClient.post(ENDPOINTS.VERIFY_CAREGIVER, { caregiver_code: code }),
-  submitCaregiverVerification: (data) => apiClient.post(ENDPOINTS.VERIFY_CAREGIVER, data),
+  login: (credentials) => apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials),
+  register: (data) => apiClient.post(API_ENDPOINTS.AUTH.REGISTER, data),
+  verifyCaregiver: (data) => apiClient.post('/auth/verify-caregiver', data),
+  forgotPassword: (email) => apiClient.post('/auth/forgot-password', { email }),
+  resetPassword: (data) => apiClient.post('/auth/reset-password', data),
+  getMe: () => apiClient.get(API_ENDPOINTS.AUTH.ME),
 };
 
 export default authApi;
-

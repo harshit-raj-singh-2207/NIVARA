@@ -1,58 +1,21 @@
-/**
- * ResourceCard.jsx
- * Community educational resource card component.
- */
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AppCard from '../common/AppCard';
 
-export const ResourceCard = ({ resource, onPress }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
-  if (!resource) return null;
-
+export const ResourceCard = ({ title, category, description }) => {
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={onPress}
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: colors.primaryLight,
-          borderRadius: borderRadius.lg,
-          padding: 10,
-          marginBottom: 8,
-          ...shadows.small,
-        },
-      ]}
-    >
-      <View style={styles.row}>
-        <Text style={{ fontSize: 22, marginRight: 8 }}>📖</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.text, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-            {resource.title}
-          </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2 }}>
-            {resource.description || 'Guide for managing sensory overload and building routines.'}
-          </Text>
+    <AppCard>
+      <View className="flex-row items-center space-x-3 mb-2">
+        <Ionicons name="document-text-outline" size={22} color="#6366F1" />
+        <View className="ml-2">
+          <Text className="text-base font-bold text-slate-900 dark:text-white">{title}</Text>
+          <Text className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">{category}</Text>
         </View>
-        <Text style={{ color: colors.primary, fontSize: 16 }}>›</Text>
       </View>
-    </TouchableOpacity>
+      <Text className="text-xs text-slate-500 dark:text-slate-400">{description}</Text>
+    </AppCard>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-});
 
 export default ResourceCard;

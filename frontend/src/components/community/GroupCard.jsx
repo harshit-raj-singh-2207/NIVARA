@@ -1,103 +1,22 @@
-/**
- * GroupCard.jsx
- * Peer support group card component.
- */
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
+import AppCard from '../common/AppCard';
+import AppButton from '../common/AppButton';
 
-export const GroupCard = ({ group, onPress, onJoin }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
-  if (!group) return null;
-
-  const isJoined = group.isJoined ?? false;
-
+export const GroupCard = ({ group, onJoin }) => {
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: colors.border,
-          borderRadius: borderRadius.lg,
-          padding: 12,
-          marginBottom: 10,
-          ...shadows.small,
-        },
-      ]}
-    >
-      <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.topRow}>
-        <Text style={{ fontSize: 24, marginRight: 10 }}>{group.icon || '👥'}</Text>
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              color: colors.text,
-              fontSize: typography.sizes.sm,
-              fontWeight: typography.weights.bold,
-            }}
-          >
-            {group.name}
-          </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs, marginTop: 2 }}>
-            {group.memberCount || 42} Members • Category: {group.category || 'Peer Support'}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={() => onJoin && onJoin(group.id)}
-          style={[
-            styles.joinBtn,
-            {
-              backgroundColor: isJoined ? colors.surface : colors.primary,
-              borderColor: isJoined ? colors.border : colors.primary,
-              borderRadius: borderRadius.md,
-            },
-          ]}
-        >
-          <Text
-            style={{
-              color: isJoined ? colors.textSecondary : '#FFFFFF',
-              fontSize: typography.sizes.xs,
-              fontWeight: 'bold',
-            }}
-          >
-            {isJoined ? 'Joined' : 'Join'}
-          </Text>
-        </TouchableOpacity>
-      </TouchableOpacity>
-
-      {group.description ? (
-        <Text
-          style={{
-            color: colors.textSecondary,
-            fontSize: typography.sizes.xs,
-            marginTop: 8,
-            lineHeight: 18,
-          }}
-        >
-          {group.description}
-        </Text>
-      ) : null}
-    </View>
+    <AppCard>
+      <Image source={{ uri: group.image }} className="w-full h-28 rounded-xl mb-3 bg-slate-200" />
+      <Text className="text-base font-bold text-slate-900 dark:text-white">{group.name}</Text>
+      <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-3">{group.membersCount} Members • {group.category}</Text>
+      <AppButton
+        title={group.isJoined ? 'Joined' : 'Join Group'}
+        variant={group.isJoined ? 'outline' : 'primary'}
+        size="sm"
+        onPress={() => onJoin && onJoin(group)}
+      />
+    </AppCard>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  joinBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-  },
-});
 
 export default GroupCard;

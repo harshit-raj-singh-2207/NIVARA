@@ -1,47 +1,24 @@
-/**
- * High Contrast Theme Object for NIVARA (WCAG AAA sensory accessibility).
- */
-
-import { BRAND_COLORS, SENSORY_PALETTES, STATUS_COLORS } from '../constants/colors';
-import { BORDER_RADIUS, SPACING } from '../constants/spacing';
-import { FONT_SIZES, FONT_WEIGHTS } from '../constants/typography';
+import typography from '../constants/typography';
+import spacing from '../constants/spacing';
 
 export const highContrastTheme = {
-  mode: 'high_contrast',
+  dark: false,
+  highContrast: true,
   colors: {
-    ...BRAND_COLORS,
-    ...SENSORY_PALETTES.high_contrast,
-    status: STATUS_COLORS,
+    background: '#FFFFFF',
+    surface: '#000000',
+    card: '#000000',
+    text: '#FFFFFF',
+    subtext: '#FFFF00',
+    border: '#FFFFFF',
+    primary: '#0000FF',
+    secondary: '#008000',
+    accent: '#FF0000',
+    danger: '#FF0000',
+    success: '#00FF00',
   },
-  spacing: SPACING,
-  borderRadius: BORDER_RADIUS,
-  typography: {
-    sizes: FONT_SIZES,
-    weights: FONT_WEIGHTS,
-  },
-  shadows: {
-    small: {
-      shadowColor: '#FFFF00',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.8,
-      shadowRadius: 2,
-      elevation: 4,
-    },
-    medium: {
-      shadowColor: '#FFFF00',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.9,
-      shadowRadius: 4,
-      elevation: 8,
-    },
-    large: {
-      shadowColor: '#FFFF00',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 1.0,
-      shadowRadius: 8,
-      elevation: 12,
-    },
-  },
+  typography,
+  spacing,
 };
 
 export default highContrastTheme;

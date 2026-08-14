@@ -1,36 +1,9 @@
-/**
- * OnlineIndicator.jsx
- * Online status dot badge component.
- */
-
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View } from 'react-native';
 
-export const OnlineIndicator = ({ isOnline = true, size = 10, style }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius } = theme;
-
-  return (
-    <View
-      style={[
-        styles.dot,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: isOnline ? colors.status.success : colors.textMuted,
-          borderColor: '#FFFFFF',
-          borderWidth: 1.5,
-        },
-        style,
-      ]}
-    />
-  );
+export const OnlineIndicator = ({ isOnline }) => {
+  if (!isOnline) return null;
+  return <View className="w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" />;
 };
-
-const styles = StyleSheet.create({
-  dot: {},
-});
 
 export default OnlineIndicator;

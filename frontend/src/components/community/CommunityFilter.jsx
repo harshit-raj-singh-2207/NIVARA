@@ -1,78 +1,31 @@
-/**
- * CommunityFilter.jsx
- * Topic filter horizontal scroll chips for community feed.
- */
-
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { ScrollView, TouchableOpacity, Text } from 'react-native';
 
-export const DEFAULT_COMMUNITY_CATEGORIES = [
-  { id: 'all', label: 'All Topics' },
-  { id: 'sensory', label: 'Sensory Tips' },
-  { id: 'aac', label: 'AAC Strategies' },
-  { id: 'caregiver', label: 'Caregiver Support' },
-  { id: 'routines', label: 'Daily Routines' },
-];
+const FILTERS = ['ALL', 'CAREGIVERS', 'RESOURCES', 'DISCUSSIONS'];
 
-export const CommunityFilter = ({
-  categories = DEFAULT_COMMUNITY_CATEGORIES,
-  selectedCategory = 'all',
-  onSelectCategory,
-  style,
-}) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography } = theme;
-
+export const CommunityFilter = ({ activeFilter, onSelectFilter }) => {
   return (
-    <View style={[styles.container, style]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {categories.map((item) => {
-          const isSelected = selectedCategory === item.id;
-          return (
-            <TouchableOpacity
-              key={item.id}
-              activeOpacity={0.8}
-              onPress={() => onSelectCategory && onSelectCategory(item.id)}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: isSelected ? colors.primary : colors.surfaceSubtle,
-                  borderColor: isSelected ? colors.primary : colors.border,
-                  borderRadius: borderRadius.full,
-                  paddingVertical: 6,
-                  paddingHorizontal: 12,
-                  marginRight: 8,
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  color: isSelected ? '#FFFFFF' : colors.text,
-                  fontSize: typography.sizes.xs,
-                  fontWeight: isSelected ? typography.weights.bold : typography.weights.medium,
-                }}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-    </View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-2 mb-2">
+      {FILTERS.map((f) => {
+        const isSelected = activeFilter === f;
+        return (
+          <TouchableOpacity
+            key={f}
+            onPress={() => onSelectFilter(f)}
+            className={`px-4 py-2 rounded-full mr-2 border ${
+              isSelected
+                ? 'bg-indigo-600 border-indigo-600'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            <Text className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-slate-600 dark:text-slate-300'}`}>
+              {f}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  scrollContent: {
-    paddingVertical: 4,
-  },
-  chip: {
-    borderWidth: 1,
-  },
-});
 
 export default CommunityFilter;

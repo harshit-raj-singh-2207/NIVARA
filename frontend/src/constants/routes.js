@@ -1,8 +1,5 @@
-/**
- * NIVARA Application Navigation Route Constants.
- */
-
-export const AUTH_ROUTES = {
+export const ROUTES = {
+  // Auth Stack
   SPLASH: 'Splash',
   ONBOARDING: 'Onboarding',
   LOGIN: 'Login',
@@ -10,37 +7,71 @@ export const AUTH_ROUTES = {
   CAREGIVER_VERIFICATION: 'CaregiverVerification',
   FORGOT_PASSWORD: 'ForgotPassword',
   RESET_PASSWORD: 'ResetPassword',
-};
 
-export const MAIN_ROUTES = {
+  // Bottom Tabs
+  MAIN_TAB: 'MainTab',
   HOME_TAB: 'HomeTab',
+  COMMUNICATION_TAB: 'CommunicationTab',
+  LEARNING_TAB: 'LearningTab',
+  SENSORY_TAB: 'SensoryTab',
+  SAFETY_TAB: 'SafetyTab',
+  CAREGIVER_TAB: 'CaregiverTab',
   COMMUNITY_TAB: 'CommunityTab',
   PROFILE_TAB: 'ProfileTab',
+
+  // Home Stack
+  HOME: 'Home',
+  NOTIFICATIONS: 'Notifications',
+
+  // Profile Stack
+  PROFILE_STACK: 'ProfileStack',
+  PROFILE: 'Profile',
+  EDIT_PROFILE: 'EditProfile',
+  SETTINGS: 'Settings',
+  PRIVACY: 'Privacy',
+  NOTIFICATION_SETTINGS: 'NotificationSettings',
+  ABOUT: 'About',
+
+  // Feature Module Screens
+  AAC: 'AAC',
+  EMOTION: 'Emotion',
+  QUICK_COMMUNICATION: 'QuickCommunication',
+  COMMUNICATION_HISTORY: 'CommunicationHistory',
+  ROUTINE: 'Routine',
+  ROUTINE_DETAILS: 'RoutineDetails',
+  TASK_DETAILS: 'TaskDetails',
+  LEARNING_TOPICS: 'LearningTopics',
+  TUTOR: 'Tutor',
+  REMINDERS: 'Reminders',
+  SOCIAL_CUE: 'SocialCue',
+  ENVIRONMENT: 'Environment',
+  SENSORY_PREFERENCES: 'SensoryPreferences',
+  EMERGENCY: 'Emergency',
+  LIVE_LOCATION: 'LiveLocation',
+  SAFE_ZONES: 'SafeZones',
+  ADD_SAFE_ZONE: 'AddSafeZone',
+  GPS_BAND: 'GPSBand',
+  EMERGENCY_CONTACTS: 'EmergencyContacts',
+  CAREGIVER_DASHBOARD: 'CaregiverDashboard',
+  CHILD_PROFILE: 'ChildProfile',
+  CHILD_STATUS: 'ChildStatus',
+  ROUTINE_OVERVIEW: 'RoutineOverview',
+  DEVICE_STATUS: 'DeviceStatus',
+  CAREGIVER_PREFERENCES: 'CaregiverPreferences',
+  CAREGIVER_CONTACTS: 'CaregiverContacts',
+  CHAT_LIST: 'ChatList',
+  DIRECT_MESSAGE: 'DirectMessage',
+  NEW_CHAT: 'NewChat',
+  GROUPS: 'Groups',
+  DISCOVER_GROUPS: 'DiscoverGroups',
+  CREATE_GROUP: 'CreateGroup',
+  GROUP_CHAT: 'GroupChat',
+  GROUP_DETAILS: 'GroupDetails',
+  GROUP_MEMBERS: 'GroupMembers',
+  COMMUNITY_FEED: 'CommunityFeed',
+  CREATE_POST: 'CreatePost',
+  POST_DETAILS: 'PostDetails',
+  CAREGIVER_PROFILE: 'CaregiverProfile',
 };
 
-export const HOME_ROUTES = {
-  HOME: 'HomeScreen',
-  NOTIFICATIONS: 'NotificationsScreen',
-};
-
-export const PROFILE_ROUTES = {
-  PROFILE: 'ProfileScreen',
-  EDIT_PROFILE: 'EditProfileScreen',
-  SETTINGS: 'SettingsScreen',
-  PRIVACY: 'PrivacyScreen',
-  NOTIFICATION_SETTINGS: 'NotificationSettingsScreen',
-  ABOUT: 'AboutScreen',
-};
-
-export const COMMUNITY_ROUTES = {
-  COMMUNITY_FEED: 'CommunityFeedScreen',
-  CREATE_POST: 'CreatePostScreen',
-};
-
-export default {
-  AUTH_ROUTES,
-  MAIN_ROUTES,
-  HOME_ROUTES,
-  PROFILE_ROUTES,
-  COMMUNITY_ROUTES,
-};
+export default ROUTES;

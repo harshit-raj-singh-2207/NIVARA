@@ -1,63 +1,55 @@
-/**
- * Chat Zustand Store for NIVARA frontend.
- * Manages direct message conversations, real-time message streams, and typing indicators.
- */
-
 import { create } from 'zustand';
-import communityApi from '../services/api/communityApi';
 
 export const useChatStore = create((set, get) => ({
+  activeChatId: 'chat_1',
   chats: [
-    { id: 'chat_1', name: 'Eleanor Vance', avatar: '👩', lastMessage: 'Checked in on Alex. All safe!', time: '10:45 AM', unreadCount: 2, isOnline: true, isTyping: false, messages: [] },
-    { id: 'chat_2', name: 'Dr. Robert Marcus', avatar: '👨‍⚕️', lastMessage: 'Scheduled routine review for tomorrow.', time: 'Yesterday', unreadCount: 0, isOnline: false, isTyping: false, messages: [] },
-  ],
-  activeChatId: null,
-  activeTypingUsers: {}, // { [chatId]: boolean }
-  isLoading: false,
-  error: null,
-
-  setActiveChatId: (chatId) => set({ activeChatId: chatId }),
-
-  fetchChats: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const data = await communityApi.getChats();
-      set({ chats: data, isLoading: false });
-    } catch (err) {
-      set({ isLoading: false, error: err.message });
+    {
+      id: 'chat_1',
+      participantName: 'Priya Sharma (Mom)',
+      participantAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
+      isOnline: true,
+      lastMessage: 'Are you ready for your afternoon break?',
+      lastTime: '10:15 AM',
+      unreadCount: 1,
+    },
+    {
+      id: 'chat_2',
+      participantName: 'Dr. Ananya Varma',
+      participantAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
+      isOnline: false,
+      lastMessage: 'Great progress on the routine chart today!',
+      lastTime: 'Yesterday',
+      unreadCount: 0,
     }
+  ],
+  messages: {
+    chat_1: [
+      { id: 'm1', senderId: 'usr_cg_100', senderName: 'Priya Sharma', text: 'Hi Aarav, remember to take a short water break!', timestamp: '10:00 AM', isMe: false },
+      { id: 'm2', senderId: 'usr_001', senderName: 'Aarav Sharma', text: 'Okay Mom, I just finished my morning routine.', timestamp: '10:05 AM', isMe: true },
+      { id: 'm3', senderId: 'usr_cg_100', senderName: 'Priya Sharma', text: 'Are you ready for your afternoon break?', timestamp: '10:15 AM', isMe: false },
+    ]
   },
 
-  appendIncomingMessage: (msgPayload) => {
-    const { chats, activeChatId } = get();
-    const targetChatId = msgPayload.chatId || activeChatId || 'chat_1';
+  setActiveChat: (chatId) => set({ activeChatId: chatId }),
 
-    const updatedChats = chats.map((chat) => {
-      if (chat.id !== targetChatId) return chat;
-      const existingMsgs = chat.messages || [];
-      return {
-        ...chat,
-        lastMessage: msgPayload.text || msgPayload.content || 'New message',
-        time: 'Just now',
-        unreadCount: activeChatId === targetChatId ? chat.unreadCount : chat.unreadCount + 1,
-        messages: [...existingMsgs, msgPayload],
-      };
-    });
-
-    set({ chats: updatedChats });
-  },
-
-  setUserTypingStatus: (chatId, isTyping) => {
-    const { activeTypingUsers, chats } = get();
-    const updatedTyping = { ...activeTypingUsers, [chatId]: isTyping };
-
-    const updatedChats = chats.map((chat) => {
-      if (chat.id !== chatId) return chat;
-      return { ...chat, isTyping };
-    });
-
-    set({ activeTypingUsers: updatedTyping, chats: updatedChats });
-  },
+  sendMessage: (chatId, text) => set(state => {
+    const chatMsgs = state.messages[chatId] || [];
+    const newMsg = {
+      id: `m_${Date.now()}`,
+      senderId: 'usr_001',
+      senderName: 'Aarav Sharma',
+      text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isMe: true,
+    };
+    return {
+      messages: {
+        ...state.messages,
+        [chatId]: [...chatMsgs, newMsg]
+      },
+      chats: state.chats.map(c => c.id === chatId ? { ...c, lastMessage: text, lastTime: 'Just now' } : c)
+    };
+  })
 }));
 
 export default useChatStore;

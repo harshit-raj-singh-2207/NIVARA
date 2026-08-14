@@ -1,91 +1,22 @@
-/**
- * Accessible Reusable Card Container for NIVARA.
- * Provides sensory-friendly elevation, borders, and touch interaction handling.
- */
-
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, TouchableOpacity } from 'react-native';
 
-export const AppCard = ({
-  children,
-  onPress,
-  variant = 'default',
-  style,
-  contentStyle,
-  accessibilityLabel,
-  accessibilityHint,
-  ...props
-}) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, shadows, spacing } = theme;
-
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'outlined':
-        return {
-          backgroundColor: colors.cardBackground,
-          borderWidth: 1,
-          borderColor: colors.cardBorder,
-        };
-      case 'elevated':
-        return {
-          backgroundColor: colors.cardBackground,
-          borderWidth: 1,
-          borderColor: colors.border,
-          ...shadows.medium,
-        };
-      case 'sensoryHighlight':
-        return {
-          backgroundColor: colors.surfaceSubtle,
-          borderWidth: 2,
-          borderColor: colors.primaryLight,
-        };
-      case 'default':
-      default:
-        return {
-          backgroundColor: colors.cardBackground,
-          borderWidth: 1,
-          borderColor: colors.border,
-          ...shadows.small,
-        };
-    }
-  };
-
+export const AppCard = ({ children, onPress, className = '', style, accessibilityLabel }) => {
   const CardWrapper = onPress ? TouchableOpacity : View;
 
   return (
     <CardWrapper
-      activeOpacity={onPress ? 0.8 : 1}
       onPress={onPress}
+      activeOpacity={0.85}
       accessible={true}
-      accessibilityRole={onPress ? 'button' : 'summary'}
+      accessibilityRole={onPress ? 'button' : 'none'}
       accessibilityLabel={accessibilityLabel}
-      accessibilityHint={accessibilityHint}
-      style={[
-        styles.card,
-        {
-          borderRadius: borderRadius.lg,
-          padding: spacing.md,
-        },
-        getVariantStyles(),
-        style,
-      ]}
-      {...props}
+      style={style}
+      className={`bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700/60 shadow-sm mb-3.5 ${className}`}
     >
-      <View style={[styles.content, contentStyle]}>{children}</View>
+      {children}
     </CardWrapper>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    width: '100%',
-    marginVertical: 6,
-  },
-  content: {
-    width: '100%',
-  },
-});
 
 export default AppCard;

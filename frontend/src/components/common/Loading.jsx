@@ -1,87 +1,22 @@
-/**
- * Accessible Reusable Loading Spinner & Overlay Component for NIVARA.
- */
-
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, ActivityIndicator, Text } from 'react-native';
 
-export const Loading = ({
-  size = 'large',
-  color,
-  message,
-  overlay = false,
-  style,
-  textStyle,
-}) => {
-  const { theme } = useTheme();
-  const { colors, spacing, typography } = theme;
-
-  const spinnerColor = color || colors.primary;
-
-  const content = (
+export const Loading = ({ text = 'Loading...' }) => {
+  return (
     <View
-      style={[
-        styles.container,
-        overlay && styles.overlayContainer,
-        { backgroundColor: overlay ? colors.overlay : 'transparent' },
-        style,
-      ]}
       accessible={true}
       accessibilityRole="progressbar"
-      accessibilityLabel={message || 'Loading content'}
+      accessibilityLabel={text}
+      className="flex-1 items-center justify-center p-6 bg-[#F5F9FF] dark:bg-slate-900"
     >
-      <View
-        style={[
-          styles.innerBox,
-          overlay && {
-            backgroundColor: colors.surface,
-            borderRadius: theme.borderRadius.lg,
-            padding: spacing.lg,
-          },
-        ]}
-      >
-        <ActivityIndicator size={size} color={spinnerColor} />
-        {message && (
-          <Text
-            style={[
-              styles.message,
-              {
-                color: colors.text,
-                fontSize: typography.sizes.md,
-                fontWeight: typography.weights.medium,
-                marginTop: spacing.md,
-              },
-              textStyle,
-            ]}
-          >
-            {message}
-          </Text>
-        )}
-      </View>
+      <ActivityIndicator size="large" color="#5B8DEF" />
+      {text && (
+        <Text className="text-sm font-bold text-[#64748B] dark:text-slate-400 mt-3.5 tracking-wide">
+          {text}
+        </Text>
+      )}
     </View>
   );
-
-  return content;
 };
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  overlayContainer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 999,
-  },
-  innerBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  message: {
-    textAlign: 'center',
-  },
-});
 
 export default Loading;

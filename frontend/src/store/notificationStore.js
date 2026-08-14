@@ -1,124 +1,86 @@
-/**
- * Notification & Safety Alert Zustand Store for NIVARA frontend.
- * Manages active notifications, unread count, category filtering, and emergency SOS alerts.
- */
-
 import { create } from 'zustand';
 
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 'notif-1',
-    title: '🚨 EMERGENCY SOS TRIGGERED',
-    message: 'High-priority SOS alert broadcasted from GPS Band #8819.',
-    type: 'emergency',
-    location: 'Home Geofence (37.7749° N, 122.4194° W)',
-    timestamp: '2m ago',
-    read: false,
-  },
-  {
-    id: 'notif-2',
-    title: '🔊 High Noise Level Warning',
-    message: 'Ambient noise level exceeded 85dB. Suggesting move to a quiet zone or noise-canceling headphones.',
-    type: 'sensory',
-    timestamp: '15m ago',
-    read: false,
-  },
-  {
-    id: 'notif-3',
-    title: '📅 Upcoming Routine Transition',
-    message: 'Afternoon Sensory Rest & Calming Activity starts in 15 minutes.',
-    type: 'routine',
-    timestamp: '25m ago',
-    read: false,
-  },
-  {
-    id: 'notif-4',
-    title: '🟢 Safe Zone Verification',
-    message: 'User arrived safely within Home Geofence boundaries.',
-    type: 'safety',
-    location: 'Home Geofence',
-    timestamp: '1h ago',
-    read: true,
-  },
-];
-
 export const useNotificationStore = create((set, get) => ({
-  notifications: INITIAL_NOTIFICATIONS,
-  unreadCount: INITIAL_NOTIFICATIONS.filter((n) => !n.read).length,
+  notifications: [
+    {
+      id: 'n1',
+      title: '🚨 Safe Zone Alert',
+      message: 'You have arrived safely at Delhi Public School Campus.',
+      time: '5 mins ago',
+      read: false,
+      category: 'EMERGENCY', // 'EMERGENCY', 'CAREGIVER', 'SYSTEM', 'GENERAL'
+      icon: 'shield-checkmark',
+    },
+    {
+      id: 'n2',
+      title: 'Caregiver Connection',
+      message: 'Priya Sharma updated your afternoon sensory break schedule.',
+      time: '25 mins ago',
+      read: false,
+      category: 'CAREGIVER',
+      icon: 'person',
+    },
+    {
+      id: 'n3',
+      title: 'Routine Reminder',
+      message: 'Time for 15-minute quiet reading session.',
+      time: '1 hour ago',
+      read: true,
+      category: 'SYSTEM',
+      icon: 'calendar',
+    },
+    {
+      id: 'n4',
+      title: 'Community Update',
+      message: 'Dr. Rahul Mehta posted new sensory regulation tips in Autism Support Group.',
+      time: '3 hours ago',
+      read: true,
+      category: 'GENERAL',
+      icon: 'people',
+    },
+  ],
   isLoading: false,
-  sosActive: false,
-  lastSosTimestamp: null,
   error: null,
 
+  getUnreadCount: () => {
+    return get().notifications.filter(n => !n.read).length;
+  },
+
   fetchNotifications: async () => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
-      const notifications = get().notifications;
-      const unreadCount = notifications.filter((n) => !n.read).length;
-      set({ notifications, unreadCount, isLoading: false, error: null });
-      return notifications;
+      await new Promise(res => setTimeout(res, 500));
+      set({ isLoading: false });
     } catch (err) {
-      set({ isLoading: false, error: err?.message || 'Failed to fetch notifications' });
-      return get().notifications;
+      set({ isLoading: false, error: err.message });
     }
   },
 
-  triggerSosAlert: async (sosPayload = {}) => {
-    set({ isLoading: true, sosActive: true, lastSosTimestamp: new Date().toISOString() });
-    try {
-      const sosNotif = {
-        id: `sos-${Date.now()}`,
-        title: '🚨 EMERGENCY SOS TRIGGERED',
-        message: sosPayload.message || 'Emergency assistance requested!',
-        type: 'emergency',
-        location: 'Current GPS Location (37.7749° N, 122.4194° W)',
-        timestamp: 'Just now',
+  markAsRead: (id) => set(state => ({
+    notifications: state.notifications.map(n => 
+      n.id === id ? { ...n, read: true } : n
+    )
+  })),
+
+  markAllAsRead: () => set(state => ({
+    notifications: state.notifications.map(n => ({ ...n, read: true }))
+  })),
+
+  clearNotifications: () => set({ notifications: [] }),
+
+  addNotification: (notif) => set(state => ({
+    notifications: [
+      {
+        id: `n_${Date.now()}`,
         read: false,
-      };
-
-      set((state) => ({
-        notifications: [sosNotif, ...state.notifications],
-        unreadCount: state.unreadCount + 1,
-        isLoading: false,
-      }));
-
-      return { success: true, message: 'Emergency SOS dispatched to caregivers and emergency contacts.' };
-    } catch (err) {
-      set({ isLoading: false, error: err?.message || 'Failed to trigger SOS' });
-      throw err;
-    }
-  },
-
-  cancelSosAlert: () => {
-    set({ sosActive: false });
-  },
-
-  markAsRead: (id) => {
-    set((state) => {
-      const updated = state.notifications.map((n) => (n.id === id ? { ...n, read: true } : n));
-      return {
-        notifications: updated,
-        unreadCount: updated.filter((n) => !n.read).length,
-      };
-    });
-  },
-
-  deleteNotification: (id) => {
-    set((state) => {
-      const updated = state.notifications.filter((n) => n.id !== id);
-      return {
-        notifications: updated,
-        unreadCount: updated.filter((n) => !n.read).length,
-      };
-    });
-  },
-
-  markAllAsRead: () => {
-    set((state) => ({
-      notifications: state.notifications.map((n) => ({ ...n, read: true })),
-      unreadCount: 0,
-    }));
-  },
+        time: 'Just now',
+        category: notif.category || 'GENERAL',
+        icon: notif.icon || 'notifications',
+        ...notif,
+      },
+      ...state.notifications,
+    ]
+  }))
 }));
 
 export default useNotificationStore;

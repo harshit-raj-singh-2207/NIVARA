@@ -1,53 +1,54 @@
-/**
- * Splash Screen for NIVARA.
- * Displays app branding and automatically navigates to Onboarding or Login.
- */
-
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
-import { AUTH_ROUTES } from '../../constants/routes';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
+import useAuthStore from '../../store/authStore';
 
 export const SplashScreen = ({ navigation }) => {
-  const { theme } = useTheme();
-  const { colors, typography } = theme;
+  const { restoreSession, isAuthenticated, isOnboarded, isRestoringSession } = useAuthStore();
 
   useEffect(() => {
-    if (navigation && navigation.replace) {
-      const timer = setTimeout(() => {
-        navigation.replace(AUTH_ROUTES.ONBOARDING);
+    let isMounted = true;
+    const initializeApp = async () => {
+      await restoreSession();
+      // Brief branding display timer
+      setTimeout(() => {
+        if (!isMounted) return;
+        if (isAuthenticated) {
+          // Parent stack listener handles redirect or navigation can replace
+        } else if (!isOnboarded) {
+          navigation.replace('Onboarding');
+        } else {
+          navigation.replace('Login');
+        }
       }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [navigation]);
+    };
+
+    initializeApp();
+    return () => { isMounted = false; };
+  }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.primary, fontSize: typography.sizes.h1 }]}>
-        NIVARA
-      </Text>
-      <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: typography.sizes.sm }]}>
-        AI-Powered Communication, Learning & Safety Ecosystem
-      </Text>
-    </View>
+    <SafeAreaWrapper className="bg-[#5B8DEF] items-center justify-center">
+      <View className="items-center px-6 text-center">
+        {/* App Logo */}
+        <View className="w-24 h-24 rounded-3xl bg-white/20 items-center justify-center mb-6 border border-white/30 shadow-lg">
+          <Ionicons name="heart-half" size={52} color="#FFFFFF" />
+        </View>
+
+        {/* App Name & Tagline */}
+        <Text className="text-4xl font-black text-white tracking-tight mb-2">
+          CareMate AI
+        </Text>
+        <Text className="text-base font-semibold text-blue-100 text-center max-w-xs leading-relaxed mb-10">
+          Personalized support when it matters.
+        </Text>
+
+        {/* Minimal Loading Indicator */}
+        <ActivityIndicator size="small" color="#FFFFFF" />
+      </View>
+    </SafeAreaWrapper>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  title: {
-    fontWeight: '800',
-    letterSpacing: 2,
-  },
-  subtitle: {
-    marginTop: 8,
-    textAlign: 'center',
-  },
-});
 
 export default SplashScreen;

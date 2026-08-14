@@ -1,89 +1,30 @@
-/**
- * TaskStep.jsx
- * Interactive step item with checkbox for routine task breakdown.
- */
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-export const TaskStep = ({ step, onToggleStep, index }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography } = theme;
-
-  const completed = step?.completed || false;
-
+export const TaskStep = ({ step, onToggle }) => {
   return (
     <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={() => onToggleStep && onToggleStep(step.id)}
-      style={[
-        styles.container,
-        {
-          backgroundColor: completed ? colors.status.successBackground : colors.surface,
-          borderColor: completed ? colors.status.success : colors.border,
-          borderRadius: borderRadius.md,
-          padding: 10,
-          marginBottom: 6,
-        },
-      ]}
+      onPress={onToggle}
+      activeOpacity={0.8}
+      className={`flex-row items-center justify-between p-4 rounded-2xl mb-2.5 border ${
+        step.completed
+          ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
+          : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700'
+      }`}
     >
-      <View
-        style={[
-          styles.checkbox,
-          {
-            backgroundColor: completed ? colors.status.success : colors.surfaceSubtle,
-            borderColor: completed ? colors.status.success : colors.border,
-            borderRadius: borderRadius.sm,
-          },
-        ]}
-      >
-        <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>
-          {completed ? '✓' : ''}
-        </Text>
-      </View>
-
-      <View style={{ flex: 1, marginLeft: 10 }}>
-        <Text
-          style={{
-            color: completed ? colors.textSecondary : colors.text,
-            fontSize: typography.sizes.sm,
-            fontWeight: typography.weights.bold,
-            textDecorationLine: completed ? 'line-through' : 'none',
-          }}
-        >
-          {index != null ? `${index + 1}. ` : ''}{step.title}
-        </Text>
-
-        {step.description ? (
-          <Text
-            style={{
-              color: colors.textMuted,
-              fontSize: typography.sizes.xs,
-              marginTop: 2,
-            }}
-          >
-            {step.description}
-          </Text>
-        ) : null}
+      <Text className={`text-base font-semibold flex-1 mr-2 ${
+        step.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-white'
+      }`}>
+        {step.title}
+      </Text>
+      <View className={`w-7 h-7 rounded-full items-center justify-center ${
+        step.completed ? 'bg-emerald-500' : 'border-2 border-slate-300 dark:border-slate-600'
+      }`}>
+        {step.completed && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
       </View>
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-  },
-});
 
 export default TaskStep;

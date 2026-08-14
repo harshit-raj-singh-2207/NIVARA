@@ -1,181 +1,41 @@
-/**
- * Accessible User Avatar Component for NIVARA.
- * Supports image URLs, name initials fallback, status badges, and sensory custom sizing.
- */
-
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { Image, View, Text } from 'react-native';
 
-export const Avatar = ({
-  source,
-  name = '',
-  size = 'medium',
-  status = null,
-  style,
-  textStyle,
-  accessibilityLabel,
-}) => {
-  const { theme } = useTheme();
-  const { colors, typography } = theme;
-
-  const getSizePx = () => {
+export const Avatar = ({ source, name = '', size = 'md', isOnline = false, className = '' }) => {
+  const getSizeStyle = () => {
     switch (size) {
-      case 'small':
-        return 36;
-      case 'large':
-        return 64;
-      case 'xlarge':
-        return 80;
-      case 'medium':
-      default:
-        return 48;
+      case 'sm': return 'w-9 h-9 rounded-full';
+      case 'lg': return 'w-16 h-16 rounded-full';
+      case 'xl': return 'w-24 h-24 rounded-full';
+      case 'md':
+      default: return 'w-12 h-12 rounded-full';
     }
   };
 
-  const getFontSizePx = () => {
-    switch (size) {
-      case 'small':
-        return typography.sizes.xs;
-      case 'large':
-        return typography.sizes.xl;
-      case 'xlarge':
-        return typography.sizes.xxl;
-      case 'medium':
-      default:
-        return typography.sizes.md;
-    }
-  };
-
-  const sizePx = getSizePx();
-  const fontSizePx = getFontSizePx();
-
-  const getInitials = (fullName) => {
-    if (!fullName) return 'U';
-    const parts = fullName.trim().split(' ');
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    }
-    return parts[0].slice(0, 2).toUpperCase();
-  };
-
-  const getStatusColor = () => {
-    switch (status) {
-      case 'online':
-        return colors.status.success;
-      case 'busy':
-        return colors.status.error;
-      case 'offline':
-      default:
-        return colors.textMuted;
-    }
+  const getInitials = (n) => {
+    if (!n) return 'U';
+    const parts = n.trim().split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return n[0].toUpperCase();
   };
 
   return (
-    <View
-      style={[styles.container, { width: sizePx, height: sizePx }, style]}
-      accessible={true}
-      accessibilityRole="image"
-      accessibilityLabel={accessibilityLabel || `Avatar for ${name || 'user'}`}
-    >
-      {source && typeof source === 'string' ? (
+    <View className={`relative ${className}`}>
+      {source ? (
         <Image
-          source={{ uri: source }}
-          style={[
-            styles.image,
-            {
-              width: sizePx,
-              height: sizePx,
-              borderRadius: sizePx / 2,
-              borderColor: colors.border,
-              borderWidth: 1,
-            },
-          ]}
-        />
-      ) : source && typeof source === 'object' ? (
-        <Image
-          source={source}
-          style={[
-            styles.image,
-            {
-              width: sizePx,
-              height: sizePx,
-              borderRadius: sizePx / 2,
-              borderColor: colors.border,
-              borderWidth: 1,
-            },
-          ]}
+          source={typeof source === 'string' ? { uri: source } : source}
+          className={`${getSizeStyle()} bg-slate-200 border-2 border-white dark:border-slate-800`}
         />
       ) : (
-        <View
-          style={[
-            styles.initialsContainer,
-            {
-              width: sizePx,
-              height: sizePx,
-              borderRadius: sizePx / 2,
-              backgroundColor: colors.surfaceSubtle,
-              borderColor: colors.primaryLight,
-              borderWidth: 1.5,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.initialsText,
-              {
-                color: colors.primary,
-                fontSize: fontSizePx,
-                fontWeight: typography.weights.bold,
-              },
-              textStyle,
-            ]}
-          >
-            {getInitials(name)}
-          </Text>
+        <View className={`${getSizeStyle()} bg-[#5B8DEF] items-center justify-center border-2 border-white dark:border-slate-800`}>
+          <Text className="text-white font-black text-sm">{getInitials(name)}</Text>
         </View>
       )}
-
-      {status && (
-        <View
-          style={[
-            styles.statusDot,
-            {
-              width: Math.max(10, sizePx * 0.25),
-              height: Math.max(10, sizePx * 0.25),
-              borderRadius: sizePx * 0.125,
-              backgroundColor: getStatusColor(),
-              borderColor: colors.surface,
-              borderWidth: 2,
-            },
-          ]}
-        />
+      {isOnline && (
+        <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#4CAF7D] rounded-full border-2 border-white dark:border-slate-900" />
       )}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  image: {
-    resizeMode: 'cover',
-  },
-  initialsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initialsText: {
-    textAlign: 'center',
-  },
-  statusDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-  },
-});
 
 export default Avatar;

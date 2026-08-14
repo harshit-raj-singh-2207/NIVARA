@@ -1,197 +1,120 @@
-/**
- * Accessible Reusable Button Component for NIVARA.
- * Supports theme variants, tactile press animation, loading state, and screen reader accessibility.
- */
-
 import React from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useTheme } from '../../theme';
+import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import colors from '../../constants/colors';
 
 export const AppButton = ({
   title,
   onPress,
-  variant = 'primary',
-  size = 'medium',
-  disabled = false,
-  loading = false,
-  leftIcon = null,
-  rightIcon = null,
+  variant = 'primary', // 'primary', 'secondary', 'accent', 'danger', 'outline', 'ghost'
+  size = 'md', // 'sm', 'md', 'lg'
+  isLoading = false,
+  isDisabled = false,
+  icon,
+  iconPosition = 'left',
   fullWidth = true,
-  style,
-  textStyle,
   accessibilityLabel,
   accessibilityHint,
-  ...props
+  className = '',
+  style,
 }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, spacing, typography } = theme;
-
-  const getVariantStyles = () => {
+  const getBackgroundColor = () => {
+    if (isDisabled) return 'bg-slate-300 dark:bg-slate-700';
     switch (variant) {
       case 'secondary':
-        return {
-          container: {
-            backgroundColor: colors.surfaceSubtle,
-            borderWidth: 1,
-            borderColor: colors.border,
-          },
-          text: { color: colors.text },
-        };
-      case 'outline':
-        return {
-          container: {
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            borderColor: colors.primary,
-          },
-          text: { color: colors.primary },
-        };
-      case 'ghost':
-        return {
-          container: {
-            backgroundColor: 'transparent',
-            borderWidth: 0,
-          },
-          text: { color: colors.primary },
-        };
+        return 'bg-[#6FCF97] active:bg-[#4DB97A]';
+      case 'accent':
+        return 'bg-[#F6D365] active:bg-[#E5BD45]';
       case 'danger':
-        return {
-          container: {
-            backgroundColor: colors.status.error,
-          },
-          text: { color: '#FFFFFF' },
-        };
-      case 'highContrast':
-        return {
-          container: {
-            backgroundColor: '#FFFF00',
-            borderWidth: 2,
-            borderColor: '#000000',
-          },
-          text: { color: '#000000', fontWeight: '800' },
-        };
+        return 'bg-[#E57373] active:bg-[#D35252]';
+      case 'outline':
+        return 'bg-transparent border-2 border-[#5B8DEF] active:bg-[#5B8DEF]/10';
+      case 'ghost':
+        return 'bg-transparent active:bg-slate-100 dark:active:bg-slate-800';
       case 'primary':
       default:
-        return {
-          container: {
-            backgroundColor: colors.primary,
-          },
-          text: { color: '#FFFFFF' },
-        };
+        return 'bg-[#5B8DEF] active:bg-[#4171D6]';
     }
   };
 
   const getSizeStyles = () => {
     switch (size) {
-      case 'small':
-        return {
-          paddingVertical: spacing.xs + 2,
-          paddingHorizontal: spacing.md,
-          fontSize: typography.sizes.sm,
-        };
-      case 'large':
-        return {
-          paddingVertical: spacing.md,
-          paddingHorizontal: spacing.xl,
-          fontSize: typography.sizes.lg,
-        };
-      case 'medium':
+      case 'sm':
+        return 'px-4 py-2.5 rounded-xl min-h-[40px]';
+      case 'lg':
+        return 'px-6 py-4 rounded-2xl min-h-[56px]';
+      case 'md':
       default:
-        return {
-          paddingVertical: spacing.sm + 4,
-          paddingHorizontal: spacing.lg,
-          fontSize: typography.sizes.md,
-        };
+        return 'px-5 py-3.5 rounded-2xl min-h-[48px]';
     }
   };
 
-  const variantStyle = getVariantStyles();
-  const sizeStyle = getSizeStyles();
+  const getTextStyles = () => {
+    if (isDisabled) return 'text-slate-500 dark:text-slate-400 font-semibold';
+    switch (variant) {
+      case 'accent':
+        return 'text-[#1F2937] font-bold';
+      case 'outline':
+      case 'ghost':
+        return 'text-[#5B8DEF] font-bold';
+      case 'primary':
+      case 'secondary':
+      case 'danger':
+      default:
+        return 'text-white font-bold';
+    }
+  };
+
+  const getTextSizeStyles = () => {
+    switch (size) {
+      case 'sm': return 'text-sm';
+      case 'lg': return 'text-lg';
+      case 'md':
+      default: return 'text-base';
+    }
+  };
+
+  const isOutline = variant === 'outline' || variant === 'ghost';
+  const iconColor = isDisabled 
+    ? '#94A3B8' 
+    : variant === 'accent' 
+    ? '#1F2937' 
+    : isOutline 
+    ? '#5B8DEF' 
+    : '#FFFFFF';
 
   return (
     <TouchableOpacity
-      activeOpacity={0.7}
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={isDisabled || isLoading}
+      activeOpacity={0.8}
       accessible={true}
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
-      style={[
-        styles.button,
-        variantStyle.container,
-        {
-          borderRadius: borderRadius.md,
-          paddingVertical: sizeStyle.paddingVertical,
-          paddingHorizontal: sizeStyle.paddingHorizontal,
-          width: fullWidth ? '100%' : 'auto',
-          opacity: disabled ? 0.5 : 1,
-        },
-        style,
-      ]}
-      {...props}
+      accessibilityState={{ disabled: isDisabled || isLoading }}
+      style={style}
+      className={`flex-row items-center justify-center ${getSizeStyles()} ${getBackgroundColor()} ${
+        fullWidth ? 'w-full' : 'self-start'
+      } ${className}`}
     >
-      <View style={styles.contentContainer}>
-        {loading ? (
-          <ActivityIndicator
-            size="small"
-            color={variantStyle.text.color}
-            style={styles.spinner}
-          />
-        ) : (
-          <>
-            {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
-            <Text
-              style={[
-                styles.text,
-                {
-                  fontSize: sizeStyle.fontSize,
-                  fontWeight: typography.weights.bold,
-                  color: variantStyle.text.color,
-                },
-                textStyle,
-              ]}
-            >
-              {title}
-            </Text>
-            {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
-          </>
-        )}
-      </View>
+      {isLoading ? (
+        <ActivityIndicator color={iconColor} size={size === 'sm' ? 'small' : 'small'} />
+      ) : (
+        <View className="flex-row items-center justify-center space-x-2">
+          {icon && iconPosition === 'left' && (
+            <Ionicons name={icon} size={size === 'sm' ? 18 : size === 'lg' ? 24 : 20} color={iconColor} style={{ marginRight: 6 }} />
+          )}
+          <Text className={`${getTextSizeStyles()} ${getTextStyles()} text-center`}>
+            {title}
+          </Text>
+          {icon && iconPosition === 'right' && (
+            <Ionicons name={icon} size={size === 'sm' ? 18 : size === 'lg' ? 24 : 20} color={iconColor} style={{ marginLeft: 6 }} />
+          )}
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  button: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  contentContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  text: {
-    textAlign: 'center',
-  },
-  iconLeft: {
-    marginRight: 8,
-  },
-  iconRight: {
-    marginLeft: 8,
-  },
-  spinner: {
-    paddingVertical: 2,
-  },
-});
 
 export default AppButton;

@@ -1,98 +1,18 @@
-/**
- * MessageExplanation.jsx
- * Displays AI text simplification breakdown or explanation rules.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import AppCard from '../common/AppCard';
-import { BRAND_COLORS } from '../../constants/colors';
-import { SPACING, BORDER_RADIUS } from '../../constants/spacing';
-import { FONT_SIZES, FONT_WEIGHTS } from '../../constants/typography';
+import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-export const MessageExplanation = ({ originalText, simplifiedText, explanation }) => {
-  if (!originalText && !simplifiedText) return null;
-
+export const MessageExplanation = ({ text, context }) => {
   return (
-    <AppCard style={styles.card}>
-      <View style={styles.header}>
-        <Text style={styles.icon}>✨</Text>
-        <Text style={styles.headerTitle}>AI Text Adaptation Breakdown</Text>
+    <View className="bg-indigo-50 dark:bg-indigo-950/40 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900 my-2">
+      <View className="flex-row items-center mb-1">
+        <Ionicons name="sparkles-outline" size={18} color="#6366F1" />
+        <Text className="text-xs font-bold text-indigo-700 dark:text-indigo-300 ml-1.5">AI Visual Clarifier</Text>
       </View>
-      
-      {originalText ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Original Input:</Text>
-          <Text style={styles.originalText}>{originalText}</Text>
-        </View>
-      ) : null}
-
-      {simplifiedText ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Simplified Text:</Text>
-          <Text style={styles.simplifiedText}>{simplifiedText}</Text>
-        </View>
-      ) : null}
-
-      {explanation ? (
-        <View style={styles.explanationBox}>
-          <Text style={styles.explanationText}>💡 {explanation}</Text>
-        </View>
-      ) : null}
-    </AppCard>
+      <Text className="text-sm font-semibold text-slate-800 dark:text-slate-100">{text}</Text>
+      {context && <Text className="text-xs text-slate-500 dark:text-slate-400 mt-1">{context}</Text>}
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    backgroundColor: '#F8FAFC',
-    borderColor: BRAND_COLORS.primaryLight + '30',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  icon: {
-    fontSize: 18,
-    marginRight: SPACING.xs,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: BRAND_COLORS.primary,
-  },
-  section: {
-    marginBottom: SPACING.xs,
-  },
-  sectionLabel: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: '#64748B',
-  },
-  originalText: {
-    fontSize: FONT_SIZES.sm,
-    color: '#334155',
-    fontStyle: 'italic',
-  },
-  simplifiedText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: '#0F172A',
-    marginTop: 2,
-  },
-  explanationBox: {
-    marginTop: SPACING.xs,
-    padding: SPACING.xs,
-    backgroundColor: BRAND_COLORS.primaryLight + '10',
-    borderRadius: BORDER_RADIUS.xs,
-  },
-  explanationText: {
-    fontSize: FONT_SIZES.xs,
-    color: BRAND_COLORS.primaryDark,
-  },
-});
 
 export default MessageExplanation;

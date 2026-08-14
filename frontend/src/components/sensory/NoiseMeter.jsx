@@ -1,88 +1,30 @@
-/**
- * NoiseMeter.jsx
- * Real-time decibel sound meter component with user threshold indicator.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AppCard from '../common/AppCard';
 
-export const NoiseMeter = ({ levelDb = 72, thresholdDb = 85, status = 'safe' }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography } = theme;
+export const NoiseMeter = ({ decibels = 45 }) => {
+  const isHigh = decibels > 70;
+  const isModerate = decibels > 55 && decibels <= 70;
 
-  const isExceeded = levelDb >= thresholdDb;
-  let statusColor = colors.status.success;
-  let statusLabel = 'Quiet / Safe';
-
-  if (isExceeded || status === 'critical') {
-    statusColor = colors.status.error;
-    statusLabel = 'High Noise Alert!';
-  } else if (levelDb >= thresholdDb - 10 || status === 'warning') {
-    statusColor = colors.status.warning;
-    statusLabel = 'Moderate Noise';
-  }
-
-  const fillPct = Math.min(100, Math.max(0, (levelDb / 120) * 100));
+  const getColor = () => {
+    if (isHigh) return '#EF4444';
+    if (isModerate) return '#F59E0B';
+    return '#10B981';
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={{ fontSize: 18, marginRight: 6 }}>🎧</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.text, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-            Ambient Sound Level
-          </Text>
-          <Text style={{ color: statusColor, fontSize: 11, fontWeight: 'bold' }}>
-            {statusLabel} • Limit: {thresholdDb} dB
-          </Text>
-        </View>
-        <Text style={{ color: colors.text, fontSize: typography.sizes.md, fontWeight: 'bold' }}>
-          {levelDb} dB
-        </Text>
+    <AppCard className="flex-1 mr-1.5">
+      <View className="flex-row items-center justify-between mb-2">
+        <Ionicons name="volume-high-outline" size={22} color={getColor()} />
+        <Text className="text-xs font-semibold text-slate-500">Noise Level</Text>
       </View>
-
-      <View
-        style={[
-          styles.track,
-          {
-            backgroundColor: colors.surfaceSubtle,
-            borderRadius: borderRadius.full,
-          },
-        ]}
-      >
-        <View
-          style={[
-            styles.fill,
-            {
-              width: `${fillPct}%`,
-              backgroundColor: statusColor,
-              borderRadius: borderRadius.full,
-            },
-          ]}
-        />
-      </View>
-    </View>
+      <Text style={{ color: getColor() }} className="text-2xl font-black">{decibels} dB</Text>
+      <Text className="text-[11px] text-slate-400 mt-1">
+        {isHigh ? 'High Noise' : isModerate ? 'Moderate' : 'Calm Environment'}
+      </Text>
+    </AppCard>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  track: {
-    height: 10,
-    width: '100%',
-    overflow: 'hidden',
-  },
-  fill: {
-    height: 10,
-  },
-});
 
 export default NoiseMeter;

@@ -1,488 +1,124 @@
-/**
- * ProfileScreen.jsx
- * Complete, production-grade User Profile Screen for NIVARA.
- * AI-Powered Safety, Sensory Adaptation & Communication platform.
- */
-
-import React, { useCallback, useState } from 'react';
-import {
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { useTheme } from '../../theme';
-import { PROFILE_ROUTES } from '../../constants/routes';
-import useAuthStore from '../../store/authStore';
-import useUserStore from '../../store/userStore';
-import userApi from '../../services/api/userApi';
-import { handleApiError } from '../../utils/errorHandler';
+import React from 'react';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
 import AppHeader from '../../components/common/AppHeader';
 import AppCard from '../../components/common/AppCard';
-import AppButton from '../../components/common/AppButton';
 import Avatar from '../../components/common/Avatar';
-import Loading from '../../components/common/Loading';
-import ConfirmModal from '../../components/common/ConfirmModal';
+import AppButton from '../../components/common/AppButton';
+import useAuthStore from '../../store/authStore';
+import useUserStore from '../../store/userStore';
 
 export const ProfileScreen = ({ navigation }) => {
-  const { theme } = useTheme();
-  const { colors, spacing, borderRadius, typography, shadows } = theme;
+  const { user, logout, switchRole } = useAuthStore();
+  const { profile } = useUserStore();
 
-  const { logout } = useAuthStore();
-  const { user, isCaregiver, sensoryPreferences, fetchCurrentUser, fetchCaregiverLinkedUsers } =
-    useUserStore();
-
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
-
-  // Device & Connection Info State
-  const [deviceInfo] = useState({
-    bandName: 'NIVARA Safety GPS Band #8819',
-    connected: true,
-    batteryLevel: 88,
-    lastSync: '2 mins ago',
-    pairedCaregiver: 'Sarah Jenkins (Primary Caregiver)',
-  });
-
-  const loadProfileData = async () => {
-    try {
-      await fetchCurrentUser();
-      if (isCaregiver) {
-        await fetchCaregiverLinkedUsers();
-      }
-    } catch (err) {
-      console.warn('Profile refresh warning:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      loadProfileData();
-    }, [isCaregiver])
-  );
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadProfileData();
-  };
-
-  const handleLogoutConfirm = async () => {
-    setLogoutModalVisible(false);
-    try {
-      await logout();
-    } catch (err) {
-      handleApiError(err, 'Logout Failed');
-    }
-  };
-
-  if (loading && !refreshing) {
-    return <Loading overlay={true} size="large" message="Loading profile settings..." />;
-  }
+  const isCaregiver = user?.role === 'CAREGIVER';
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title="User Profile" subtitle="Account Settings & Preferences" />
-
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { padding: spacing.lg }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        {/* 1. HEADER & AVATAR SECTION */}
-        <AppCard variant="elevated" style={[styles.profileHeaderCard, shadows.small, { marginBottom: spacing.md }]}>
+    <SafeAreaWrapper className="bg-[#F5F9FF] dark:bg-slate-900">
+      <AppHeader title="Account & Profile" />
+      <ScrollView contentContainerStyle={{ padding: 20 }}>
+        {/* Profile Card */}
+        <AppCard className="items-center p-6 mb-6">
           <Avatar
-            name={user?.full_name || 'User'}
-            source={user?.avatar_url}
-            size="xlarge"
-            status="online"
-            style={{ marginBottom: spacing.sm }}
+            source={user?.avatar || profile?.avatar}
+            name={user?.name || profile?.name || 'Aarav'}
+            size="xl"
+            className="mb-3"
           />
-
-          <Text
-            style={[
-              styles.userName,
-              {
-                color: colors.text,
-                fontSize: typography.sizes.xl,
-                fontWeight: typography.weights.bold,
-              },
-            ]}
-          >
-            {user?.full_name || 'NIVARA User'}
+          <Text className="text-2xl font-black text-[#1F2937] dark:text-white">
+            {user?.name || profile?.name || 'Aarav Sharma'}
           </Text>
-
-          <Text
-            style={[
-              styles.userEmail,
-              {
-                color: colors.textSecondary,
-                fontSize: typography.sizes.sm,
-                marginTop: 2,
-              },
-            ]}
-          >
-            {user?.email || 'user@nivara.app'}
+          <Text className="text-xs font-semibold text-[#64748B] mb-3">
+            {user?.email || profile?.email || 'aarav@example.com'}
           </Text>
 
           {/* Role Badge */}
-          <View
-            style={[
-              styles.roleBadge,
-              {
-                backgroundColor: isCaregiver
-                  ? colors.status.infoBackground
-                  : colors.surfaceSubtle,
-                borderColor: isCaregiver ? colors.primary : colors.border,
-                borderWidth: 1,
-                borderRadius: borderRadius.md,
-                paddingHorizontal: spacing.md,
-                paddingVertical: 4,
-                marginTop: spacing.sm,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: colors.primary,
-                fontWeight: typography.weights.bold,
-                fontSize: typography.sizes.xs,
-              }}
-            >
-              ROLE: {isCaregiver ? 'CAREGIVER / ADMIN' : 'PRIMARY USER'}
-            </Text>
-          </View>
-
-          {/* Caregiver Pairing Code if available */}
-          {user?.caregiver_code && (
-            <View
-              style={[
-                styles.codeBox,
-                {
-                  backgroundColor: colors.surfaceSubtle,
-                  borderColor: colors.primaryLight,
-                  borderWidth: 1,
-                  borderRadius: borderRadius.md,
-                  padding: spacing.md,
-                  marginTop: spacing.md,
-                  width: '100%',
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  color: colors.textSecondary,
-                  fontSize: typography.sizes.xs,
-                  textAlign: 'center',
-                }}
-              >
-                Your Caregiver Pairing Code:
-              </Text>
-              <Text
-                style={{
-                  color: colors.primary,
-                  fontWeight: typography.weights.bold,
-                  fontSize: typography.sizes.lg,
-                  textAlign: 'center',
-                  marginTop: 2,
-                  letterSpacing: 2,
-                }}
-              >
-                {user.caregiver_code}
-              </Text>
-            </View>
-          )}
-
-          {/* Quick Edit Profile Button */}
-          <AppButton
-            title="Edit Profile Details"
-            onPress={() => navigation.navigate(PROFILE_ROUTES.EDIT_PROFILE)}
-            variant="outline"
-            size="small"
-            fullWidth={true}
-            style={{ marginTop: spacing.md }}
-          />
-        </AppCard>
-
-        {/* 2. CONNECTED DEVICE & SAFETY OVERVIEW */}
-        <AppCard variant="bordered" style={{ marginBottom: spacing.md }}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: colors.text,
-                fontSize: typography.sizes.md,
-                fontWeight: typography.weights.bold,
-                marginBottom: spacing.xs,
-              },
-            ]}
-          >
-            📡 Connected Device & Safety Overview
-          </Text>
-
-          <View style={styles.deviceRow}>
-            <Text style={{ fontSize: 24, marginRight: spacing.sm }}>⌚</Text>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  color: colors.text,
-                  fontSize: typography.sizes.sm,
-                  fontWeight: typography.weights.bold,
-                }}
-              >
-                {deviceInfo.bandName}
-              </Text>
-              <Text style={{ color: colors.status.success, fontSize: typography.sizes.xs }}>
-                🟢 Connected • Battery {deviceInfo.batteryLevel}% • Last Sync {deviceInfo.lastSync}
-              </Text>
-            </View>
-          </View>
-
-          <View
-            style={[
-              styles.caregiverInfoRow,
-              {
-                backgroundColor: colors.surfaceSubtle,
-                borderRadius: borderRadius.md,
-                padding: spacing.sm,
-                marginTop: spacing.sm,
-              },
-            ]}
-          >
-            <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs }}>
-              Assigned Caregiver:
-            </Text>
-            <Text
-              style={{
-                color: colors.text,
-                fontSize: typography.sizes.xs,
-                fontWeight: typography.weights.bold,
-                marginTop: 2,
-              }}
-            >
-              {user?.caregiver_id ? 'Sarah Jenkins (Linked Active Caregiver)' : 'No Caregiver Assigned Yet'}
+          <View className={`px-4 py-1.5 rounded-full border ${
+            isCaregiver ? 'bg-[#6FCF97]/20 border-[#6FCF97]' : 'bg-[#5B8DEF]/15 border-[#5B8DEF]'
+          }`}>
+            <Text className={`text-xs font-black ${isCaregiver ? 'text-[#4DB97A]' : 'text-[#5B8DEF]'}`}>
+              {isCaregiver ? 'CAREGIVER PORTAL MODE' : 'SELF / USER MODE'}
             </Text>
           </View>
         </AppCard>
 
-        {/* 3. PREFERENCE HIGHLIGHTS CARD */}
-        <AppCard variant="sensoryHighlight" style={{ marginBottom: spacing.md }}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: colors.text,
-                fontSize: typography.sizes.md,
-                fontWeight: typography.weights.bold,
-                marginBottom: spacing.xs,
-              },
-            ]}
-          >
-            ⚙️ Sensory & Communication Preferences
-          </Text>
-
-          <View style={styles.prefGrid}>
-            <View style={styles.prefItem}>
-              <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs }}>
-                Theme Mode
-              </Text>
-              <Text style={{ color: colors.text, fontSize: typography.sizes.sm, fontWeight: typography.weights.bold }}>
-                {sensoryPreferences?.theme_mode?.toUpperCase() || 'LIGHT'}
-              </Text>
+        {/* Role Switching Option */}
+        <AppCard
+          onPress={() => switchRole(isCaregiver ? 'INDIVIDUAL' : 'CAREGIVER')}
+          className="flex-row items-center justify-between mb-6"
+        >
+          <View className="flex-row items-center space-x-3.5">
+            <View className="w-10 h-10 rounded-2xl bg-[#5B8DEF]/15 items-center justify-center">
+              <Ionicons name="swap-horizontal" size={22} color="#5B8DEF" />
             </View>
-
-            <View style={styles.prefItem}>
-              <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs }}>
-                Sound Sensitivity
+            <View className="ml-3">
+              <Text className="text-sm font-black text-[#1F2937] dark:text-white">
+                Switch Role View
               </Text>
-              <Text style={{ color: colors.text, fontSize: typography.sizes.sm, fontWeight: typography.weights.bold }}>
-                Level {sensoryPreferences?.sound_sensitivity_level || 3} / 5
-              </Text>
-            </View>
-
-            <View style={styles.prefItem}>
-              <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs }}>
-                Brightness Sensitivity
-              </Text>
-              <Text style={{ color: colors.text, fontSize: typography.sizes.sm, fontWeight: typography.weights.bold }}>
-                Level {sensoryPreferences?.brightness_sensitivity_level || 3} / 5
-              </Text>
-            </View>
-
-            <View style={styles.prefItem}>
-              <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs }}>
-                Haptic Feedback
-              </Text>
-              <Text style={{ color: colors.text, fontSize: typography.sizes.sm, fontWeight: typography.weights.bold }}>
-                {sensoryPreferences?.haptic_feedback_enabled ? 'ENABLED' : 'DISABLED'}
+              <Text className="text-xs font-semibold text-[#64748B] mt-0.5">
+                Current: {isCaregiver ? 'Caregiver Dashboard' : 'Individual User Tools'}
               </Text>
             </View>
           </View>
+          <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
         </AppCard>
 
-        {/* 4. QUICK NAVIGATION LINKS */}
-        <AppCard variant="elevated" style={{ marginBottom: spacing.lg }}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: colors.text,
-                fontSize: typography.sizes.md,
-                fontWeight: typography.weights.bold,
-                marginBottom: spacing.sm,
-              },
-            ]}
-          >
-            📂 Quick Navigation
-          </Text>
+        {/* Menu Navigation Options */}
+        <Text className="text-base font-black text-[#1F2937] dark:text-white mb-3">
+          Account Settings
+        </Text>
 
-          <View style={styles.menuList}>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate(PROFILE_ROUTES.SETTINGS)}
-              style={[styles.menuItem, { borderBottomColor: colors.border }]}
-            >
-              <Text style={styles.menuIcon}>⚙️</Text>
-              <Text style={[styles.menuLabel, { color: colors.text }]}>System & Sensory Settings</Text>
-              <Text style={styles.menuArrow}>›</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate(PROFILE_ROUTES.PRIVACY)}
-              style={[styles.menuItem, { borderBottomColor: colors.border }]}
-            >
-              <Text style={styles.menuIcon}>🛡️</Text>
-              <Text style={[styles.menuLabel, { color: colors.text }]}>Privacy & Safety Rules</Text>
-              <Text style={styles.menuArrow}>›</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate(PROFILE_ROUTES.NOTIFICATION_SETTINGS)}
-              style={[styles.menuItem, { borderBottomColor: colors.border }]}
-            >
-              <Text style={styles.menuIcon}>🔔</Text>
-              <Text style={[styles.menuLabel, { color: colors.text }]}>Notification Settings</Text>
-              <Text style={styles.menuArrow}>›</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate(PROFILE_ROUTES.ABOUT)}
-              style={styles.menuItem}
-            >
-              <Text style={styles.menuIcon}>ℹ️</Text>
-              <Text style={[styles.menuLabel, { color: colors.text }]}>About NIVARA</Text>
-              <Text style={styles.menuArrow}>›</Text>
-            </TouchableOpacity>
+        <AppCard onPress={() => navigation.navigate('EditProfile')} className="flex-row items-center justify-between">
+          <View className="flex-row items-center space-x-3">
+            <Ionicons name="person-outline" size={22} color="#64748B" />
+            <Text className="text-sm font-bold text-[#1F2937] dark:text-slate-200 ml-3">Edit Profile Information</Text>
           </View>
+          <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
         </AppCard>
 
-        {/* 5. LOGOUT & ACCOUNT ACTIONS */}
+        <AppCard onPress={() => navigation.navigate('Settings')} className="flex-row items-center justify-between">
+          <View className="flex-row items-center space-x-3">
+            <Ionicons name="settings-outline" size={22} color="#64748B" />
+            <Text className="text-sm font-bold text-[#1F2937] dark:text-slate-200 ml-3">Accessibility & Display</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+        </AppCard>
+
+        <AppCard onPress={() => navigation.navigate('NotificationSettings')} className="flex-row items-center justify-between">
+          <View className="flex-row items-center space-x-3">
+            <Ionicons name="notifications-outline" size={22} color="#64748B" />
+            <Text className="text-sm font-bold text-[#1F2937] dark:text-slate-200 ml-3">Notification Preferences</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+        </AppCard>
+
+        <AppCard onPress={() => navigation.navigate('Privacy')} className="flex-row items-center justify-between">
+          <View className="flex-row items-center space-x-3">
+            <Ionicons name="lock-closed-outline" size={22} color="#64748B" />
+            <Text className="text-sm font-bold text-[#1F2937] dark:text-slate-200 ml-3">Privacy & Permissions</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+        </AppCard>
+
+        <AppCard onPress={() => navigation.navigate('About')} className="flex-row items-center justify-between mb-8">
+          <View className="flex-row items-center space-x-3">
+            <Ionicons name="information-circle-outline" size={22} color="#64748B" />
+            <Text className="text-sm font-bold text-[#1F2937] dark:text-slate-200 ml-3">About CareMate AI</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+        </AppCard>
+
         <AppButton
-          title="Log Out of Account"
-          onPress={() => setLogoutModalVisible(true)}
+          title="Sign Out"
           variant="danger"
-          size="large"
-          fullWidth={true}
+          onPress={logout}
+          size="lg"
         />
       </ScrollView>
-
-      {/* LOGOUT CONFIRMATION MODAL */}
-      <ConfirmModal
-        visible={logoutModalVisible}
-        title="Log Out Confirmation"
-        message="Are you sure you want to log out of your NIVARA safety account?"
-        confirmText="Log Out"
-        cancelText="Cancel"
-        isDanger={true}
-        onConfirm={handleLogoutConfirm}
-        onCancel={() => setLogoutModalVisible(false)}
-      />
-    </View>
+    </SafeAreaWrapper>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 40,
-  },
-  profileHeaderCard: {
-    alignItems: 'center',
-  },
-  userName: {
-    textAlign: 'center',
-  },
-  userEmail: {
-    textAlign: 'center',
-  },
-  roleBadge: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  codeBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionTitle: {
-    textAlign: 'left',
-  },
-  deviceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  caregiverInfoRow: {
-    width: '100%',
-  },
-  prefGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 8,
-  },
-  prefItem: {
-    width: '47%',
-  },
-  menuList: {
-    width: '100%',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  menuIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  menuLabel: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  menuArrow: {
-    fontSize: 20,
-    color: '#94A3B8',
-  },
-});
 
 export default ProfileScreen;

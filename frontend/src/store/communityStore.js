@@ -1,70 +1,70 @@
-/**
- * Community Zustand Store for NIVARA frontend.
- * Manages social community feed posts, groups, and active topic filters.
- */
-
 import { create } from 'zustand';
-import communityApi from '../services/api/communityApi';
 
 export const useCommunityStore = create((set, get) => ({
+  activeFilter: 'ALL', // ALL, CAREGIVERS, RESOURCES, DISCUSSIONS
   posts: [
-    { id: 'p1', authorName: 'Sarah Jenkins', time: '2 hours ago', category: 'Sensory Tips', content: 'Tip of the day: Deep touch pressure blankets really help reduce evening anxiety after a loud day outside!', likes: 14, commentsCount: 5, isLiked: true },
-    { id: 'p2', authorName: 'David K.', time: '4 hours ago', category: 'AAC Strategies', content: 'Just added 6 new custom AAC symbol cards for school lunchtime needs! Works great with the TTS feature.', likes: 22, commentsCount: 8, isLiked: false },
+    {
+      id: 'post_1',
+      authorName: 'Sunita Patel',
+      authorRole: 'Parent & Occupational Educator',
+      authorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
+      content: 'Sharing a wonderful visual routine checklist that worked wonders for my 8-year-old during morning transitions! Feel free to copy our schedule format.',
+      tags: ['Routine', 'AutismSupport', 'VisualSchedule'],
+      likesCount: 24,
+      commentsCount: 8,
+      isLiked: false,
+      createdAt: '2 hours ago',
+    },
+    {
+      id: 'post_2',
+      authorName: 'Dr. Rahul Mehta',
+      authorRole: 'Pediatric Neurologist',
+      authorAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150',
+      content: 'Tips for managing sensory overload in crowded places: Always carry noise-canceling headphones, create a 5-minute exit plan, and use tactile fidgets.',
+      tags: ['SensoryCare', 'ExpertAdvice', 'Decompression'],
+      likesCount: 56,
+      commentsCount: 19,
+      isLiked: true,
+      createdAt: '5 hours ago',
+    }
   ],
   groups: [
-    { id: 'g1', name: 'Sensory Overload Peer Support', icon: '🎧', memberCount: 128, category: 'Sensory Tips', isJoined: true, description: 'Sharing soothing techniques, low-sensory environments, and noise cancellation hacks.' },
-    { id: 'g2', name: 'AAC & Visual Boards Circle', icon: '🎨', memberCount: 94, category: 'AAC Strategies', isJoined: false, description: 'Tips for customized picture symbol boards and non-verbal expression.' },
+    { id: 'grp_1', name: 'Neurodivergent Parents Circle', membersCount: 1420, category: 'Parent Support', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=200', isJoined: true },
+    { id: 'grp_2', name: 'Sensory Tool & AAC Tips', membersCount: 890, category: 'Communication', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200', isJoined: false },
+    { id: 'grp_3', name: 'Special Educator Network', membersCount: 650, category: 'Education', image: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=200', isJoined: true },
   ],
-  resources: [
-    { id: 'r1', title: 'Sensory Overload Prevention Guide', category: 'Sensory Tips', description: 'Actionable steps for managing noisy environments and light glare.' },
-    { id: 'r2', title: 'AAC Visual Communication Manual', category: 'AAC Strategies', description: 'Best practices for picture board building and Text-to-Speech synthesis.' },
-  ],
-  selectedCategory: 'all',
-  searchQuery: '',
-  isLoading: false,
-  error: null,
 
-  setSelectedCategory: (cat) => set({ selectedCategory: cat }),
-  setSearchQuery: (query) => set({ searchQuery: query }),
-
-  fetchCommunityData: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const postsData = await communityApi.getPosts();
-      const groupsData = await communityApi.getGroups();
-      set({ posts: postsData, groups: groupsData, isLoading: false });
-    } catch (err) {
-      set({ isLoading: false, error: err.message });
-    }
-  },
-
-  toggleLikePost: (postId) => {
-    const { posts } = get();
-    const updated = posts.map((p) => {
+  toggleLikePost: (postId) => set(state => ({
+    posts: state.posts.map(p => {
       if (p.id !== postId) return p;
       const isLiked = !p.isLiked;
       return {
         ...p,
         isLiked,
-        likes: isLiked ? p.likes + 1 : Math.max(0, p.likes - 1),
+        likesCount: isLiked ? p.likesCount + 1 : p.likesCount - 1,
       };
-    });
-    set({ posts: updated });
-  },
+    })
+  })),
 
-  toggleJoinGroup: (groupId) => {
-    const { groups } = get();
-    const updated = groups.map((g) => {
-      if (g.id !== groupId) return g;
-      const isJoined = !g.isJoined;
-      return {
-        ...g,
-        isJoined,
-        memberCount: isJoined ? g.memberCount + 1 : Math.max(0, g.memberCount - 1),
-      };
-    });
-    set({ groups: updated });
-  },
+  addPost: (content, tags = []) => set(state => ({
+    posts: [
+      {
+        id: `post_${Date.now()}`,
+        authorName: 'Aarav Sharma',
+        authorRole: 'Community Member',
+        authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        content,
+        tags,
+        likesCount: 0,
+        commentsCount: 0,
+        isLiked: false,
+        createdAt: 'Just now',
+      },
+      ...state.posts
+    ]
+  })),
+
+  setFilter: (filter) => set({ activeFilter: filter }),
 }));
 
 export default useCommunityStore;

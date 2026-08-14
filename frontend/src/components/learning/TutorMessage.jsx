@@ -1,55 +1,31 @@
-/**
- * TutorMessage.jsx
- * AI Adaptive Learning Tutor message bubble / hint component.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import AppCard from '../common/AppCard';
-import { BRAND_COLORS } from '../../constants/colors';
-import { SPACING, BORDER_RADIUS } from '../../constants/spacing';
-import { FONT_SIZES, FONT_WEIGHTS } from '../../constants/typography';
+import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-export const TutorMessage = ({ text, title = 'AI Learning Assistant' }) => {
-  if (!text) return null;
+export const TutorMessage = ({ message }) => {
+  const isTutor = message.sender === 'TUTOR';
 
   return (
-    <AppCard style={styles.card}>
-      <View style={styles.header}>
-        <Text style={styles.avatar}>🤖</Text>
-        <Text style={styles.title}>{title}</Text>
+    <View className={`my-1.5 flex-row ${isTutor ? 'justify-start' : 'justify-end'}`}>
+      {isTutor && (
+        <View className="w-8 h-8 rounded-full bg-indigo-600 items-center justify-center mr-2 self-end mb-1">
+          <Ionicons name="hardware-chip-outline" size={16} color="#FFFFFF" />
+        </View>
+      )}
+      <View className={`max-w-[80%] p-3.5 rounded-2xl ${
+        isTutor
+          ? 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-bl-none'
+          : 'bg-indigo-600 rounded-br-none'
+      }`}>
+        <Text className={`text-sm ${isTutor ? 'text-slate-800 dark:text-slate-100' : 'text-white'}`}>
+          {message.text}
+        </Text>
+        <Text className={`text-[10px] mt-1 ${isTutor ? 'text-slate-400' : 'text-indigo-200'} text-right`}>
+          {message.timestamp}
+        </Text>
       </View>
-      <Text style={styles.body}>{text}</Text>
-    </AppCard>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    backgroundColor: BRAND_COLORS.primaryLight + '10',
-    borderColor: BRAND_COLORS.primaryLight + '30',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
-  },
-  avatar: {
-    fontSize: 20,
-    marginRight: SPACING.xs,
-  },
-  title: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: BRAND_COLORS.primary,
-  },
-  body: {
-    fontSize: FONT_SIZES.sm,
-    color: '#0F172A',
-    lineHeight: 20,
-  },
-});
 
 export default TutorMessage;

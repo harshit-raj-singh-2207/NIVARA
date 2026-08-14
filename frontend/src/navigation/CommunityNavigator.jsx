@@ -1,56 +1,41 @@
-/**
- * Community Stack Navigator for NIVARA.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { COMMUNITY_ROUTES } from '../constants/routes';
-import { useTheme } from '../theme';
-import AppHeader from '../components/common/AppHeader';
+import CommunityHomeScreen from '../screens/community/CommunityHomeScreen';
+import ChatListScreen from '../screens/community/ChatListScreen';
+import DirectMessageScreen from '../screens/community/DirectMessageScreen';
+import NewChatScreen from '../screens/community/NewChatScreen';
+import GroupsScreen from '../screens/community/GroupsScreen';
+import DiscoverGroupsScreen from '../screens/community/DiscoverGroupsScreen';
+import CreateGroupScreen from '../screens/community/CreateGroupScreen';
+import GroupChatScreen from '../screens/community/GroupChatScreen';
+import GroupDetailsScreen from '../screens/community/GroupDetailsScreen';
+import GroupMembersScreen from '../screens/community/GroupMembersScreen';
+import CommunityFeedScreen from '../screens/community/CommunityFeedScreen';
+import CreatePostScreen from '../screens/community/CreatePostScreen';
+import PostDetailsScreen from '../screens/community/PostDetailsScreen';
+import CaregiverProfileScreen from '../screens/community/CaregiverProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
-function CommunityFeedScreen() {
-  const { theme } = useTheme();
-  const { colors, typography, spacing } = theme;
-
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <AppHeader title="Community & Support" />
-      <View style={[styles.content, { padding: spacing.md }]}>
-        <Text style={{ color: colors.text, fontSize: typography.sizes.md }}>
-          👥 NIVARA Peer Support & Community Hub
-        </Text>
-        <Text style={{ color: colors.textSecondary, marginTop: 8, fontSize: typography.sizes.sm }}>
-          Connect with caregivers, mentors, and sensory-friendly community members.
-        </Text>
-      </View>
-    </View>
-  );
-}
-
 export const CommunityNavigator = () => {
   return (
-    <Stack.Navigator
-      initialRouteName={COMMUNITY_ROUTES.COMMUNITY_FEED}
-      screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-      }}
-    >
-      <Stack.Screen name={COMMUNITY_ROUTES.COMMUNITY_FEED} component={CommunityFeedScreen} />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="CommunityMain" component={CommunityHomeScreen} />
+      <Stack.Screen name="ChatList" component={ChatListScreen} />
+      <Stack.Screen name="DirectMessage" component={DirectMessageScreen} />
+      <Stack.Screen name="NewChat" component={NewChatScreen} />
+      <Stack.Screen name="Groups" component={GroupsScreen} />
+      <Stack.Screen name="DiscoverGroups" component={DiscoverGroupsScreen} />
+      <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />
+      <Stack.Screen name="GroupChat" component={GroupChatScreen} />
+      <Stack.Screen name="GroupDetails" component={GroupDetailsScreen} />
+      <Stack.Screen name="GroupMembers" component={GroupMembersScreen} />
+      <Stack.Screen name="CommunityFeed" component={CommunityFeedScreen} />
+      <Stack.Screen name="CreatePost" component={CreatePostScreen} />
+      <Stack.Screen name="PostDetails" component={PostDetailsScreen} />
+      <Stack.Screen name="CaregiverProfile" component={CaregiverProfileScreen} />
     </Stack.Navigator>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-  },
-});
 
 export default CommunityNavigator;

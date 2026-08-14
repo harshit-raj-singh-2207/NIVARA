@@ -1,95 +1,19 @@
-/**
- * MapView.jsx
- * Embedded interactive GPS map viewer component showing real-time location and active safe zone boundaries.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-export const MapView = ({ location, safeZones = [], style }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
-  const lat = location?.latitude || 37.7749;
-  const lng = location?.longitude || -122.4194;
-
+export const MapView = ({ latitude = 28.6139, longitude = 77.2090, label = 'Current Pin' }) => {
   return (
-    <View
-      style={[
-        styles.mapContainer,
-        {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: colors.border,
-          borderRadius: borderRadius.lg,
-          ...shadows.small,
-        },
-        style,
-      ]}
-    >
-      <View style={styles.gridOverlay}>
-        <Text style={{ fontSize: 36, marginBottom: 4 }}>🗺️</Text>
-        <Text
-          style={{
-            color: colors.text,
-            fontSize: typography.sizes.sm,
-            fontWeight: typography.weights.bold,
-          }}
-        >
-          GPS Map Satellite Radar
-        </Text>
-        <Text
-          style={{
-            color: colors.textSecondary,
-            fontSize: typography.sizes.xs,
-            marginTop: 2,
-          }}
-        >
-          Lat: {lat.toFixed(4)} • Lng: {lng.toFixed(4)}
-        </Text>
-
-        <View
-          style={[
-            styles.geofenceRing,
-            {
-              borderColor: colors.primary,
-              backgroundColor: 'rgba(99, 102, 241, 0.1)',
-              borderRadius: borderRadius.full,
-            },
-          ]}
-        >
-          <Text style={{ fontSize: 16 }}>📍</Text>
-          <Text style={{ color: colors.primary, fontSize: 10, fontWeight: 'bold' }}>
-            500m Safe Zone Boundary
-          </Text>
+    <View className="w-full h-48 bg-slate-200 dark:bg-slate-800 rounded-2xl items-center justify-center relative overflow-hidden border border-slate-300 dark:border-slate-700">
+      <View className="items-center">
+        <Ionicons name="location-sharp" size={36} color="#EF4444" />
+        <View className="bg-slate-900/80 px-3 py-1 rounded-full mt-1">
+          <Text className="text-white text-xs font-semibold">{label}</Text>
         </View>
+        <Text className="text-[10px] text-slate-500 mt-1">Lat: {latitude.toFixed(4)}, Lon: {longitude.toFixed(4)}</Text>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  mapContainer: {
-    height: 180,
-    width: '100%',
-    overflow: 'hidden',
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gridOverlay: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  geofenceRing: {
-    marginTop: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1.5,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-});
 
 export default MapView;

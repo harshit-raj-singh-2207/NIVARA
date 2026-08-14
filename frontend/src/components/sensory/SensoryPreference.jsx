@@ -1,63 +1,22 @@
-/**
- * SensoryPreference.jsx
- * Sensory sensitivity preferences card (noise threshold dB, brightness lux, theme mode controls).
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { View, Text, Switch } from 'react-native';
 import AppCard from '../common/AppCard';
-import { BRAND_COLORS } from '../../constants/colors';
-import { SPACING, BORDER_RADIUS } from '../../constants/spacing';
-import { FONT_SIZES, FONT_WEIGHTS } from '../../constants/typography';
 
-export const SensoryPreference = ({ noiseDb = 85, brightnessLux = 800, themeMode = 'light' }) => {
+export const SensoryPreference = ({ title, subtitle, value, onValueChange }) => {
   return (
-    <AppCard style={styles.card}>
-      <Text style={styles.title}>Sensory Sensitivity Profile</Text>
-      
-      <View style={styles.row}>
-        <Text style={styles.label}>Max Noise Threshold:</Text>
-        <Text style={styles.value}>{noiseDb} dB</Text>
+    <AppCard className="flex-row items-center justify-between">
+      <View className="flex-1 mr-3">
+        <Text className="text-base font-bold text-slate-900 dark:text-white">{title}</Text>
+        {subtitle && <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</Text>}
       </View>
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Max Light Brightness:</Text>
-        <Text style={styles.value}>{brightnessLux} Lux</Text>
-      </View>
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Theme Palette:</Text>
-        <Text style={styles.value}>{themeMode.toUpperCase()}</Text>
-      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: '#CBD5E1', true: '#14B8A6' }}
+        thumbColor={value ? '#0D9488' : '#F1F5F9'}
+      />
     </AppCard>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  title: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: '#0F172A',
-    marginBottom: SPACING.xs,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
-  },
-  label: {
-    fontSize: FONT_SIZES.xs,
-    color: '#64748B',
-  },
-  value: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: BRAND_COLORS.primary,
-  },
-});
 
 export default SensoryPreference;

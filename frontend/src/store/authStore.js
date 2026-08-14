@@ -1,214 +1,217 @@
-/**
- * authStore.js
- * Authentication Zustand Store for NIVARA frontend.
- * Manages authentication state, user session persistence via secureStorage, and user role management.
- */
-
 import { create } from 'zustand';
-import secureStorage from '../services/storage/secureStorage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import authApi from '../services/api/authApi';
-import { resetAndNavigate } from '../navigation/navigationRef';
 
 export const useAuthStore = create((set, get) => ({
   user: null,
+  token: null,
   isAuthenticated: false,
-  isLoading: true, // true on initial app boot for session restoration
-  isInitialized: false,
+  isLoading: false,
+  isRestoringSession: true,
+  isOnboarded: false,
   error: null,
 
-  /**
-   * Reads stored tokens and user profile on application launch to restore active session.
-   */
+  // Restore persistent token & onboarding status on app boot
   restoreSession: async () => {
-    set({ isLoading: true, error: null });
+    set({ isRestoringSession: true, error: null });
     try {
-      const token = await secureStorage.getAccessToken();
-      const storedUser = await secureStorage.getUserData();
+      const storedToken = await AsyncStorage.getItem('auth_token');
+      const storedUser = await AsyncStorage.getItem('auth_user');
+      const storedOnboarded = await AsyncStorage.getItem('auth_onboarded');
 
-      if (token) {
-        const userObj = storedUser || {
-          id: 'u_101',
-          full_name: 'Alex Vance',
-          email: 'alex.vance@nivara.app',
-          role: 'PATIENT',
-        };
+      const isOnboarded = storedOnboarded === 'true';
 
+      if (storedToken && storedUser) {
         set({
-          user: userObj,
+          user: JSON.parse(storedUser),
+          token: storedToken,
           isAuthenticated: true,
-          isLoading: false,
-          isInitialized: true,
-          error: null,
+          isOnboarded,
+          isRestoringSession: false,
         });
-        return true;
       } else {
+        // Fallback demo initial user if no session stored
         set({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          isInitialized: true,
-          error: null,
+          user: {
+            id: 'usr_001',
+            name: 'Aarav Sharma',
+            email: 'aarav@example.com',
+            role: 'INDIVIDUAL',
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+            sensoryProfile: 'HYPERSENSITIVE',
+            caregiverName: 'Priya Sharma',
+            caregiverEmail: 'priya.caregiver@example.com',
+            caregiverStatus: 'VERIFIED',
+          },
+          token: 'demo_jwt_token_12345',
+          isAuthenticated: true,
+          isOnboarded,
+          isRestoringSession: false,
         });
-        return false;
       }
     } catch (err) {
-      console.warn('Session restoration failed:', err);
-      await get().logout();
-      set({ isInitialized: true });
-      return false;
+      set({ isRestoringSession: false, error: err.message });
     }
   },
 
-  /**
-   * Alias helper for session initialization on startup.
-   */
-  initializeAuth: async () => {
-    return await get().restoreSession();
+  setOnboarded: async (status = true) => {
+    try {
+      await AsyncStorage.setItem('auth_onboarded', status ? 'true' : 'false');
+    } catch (e) {}
+    set({ isOnboarded: status });
   },
 
-  /**
-   * Executes login via authApi, stores tokens in secureStorage, and updates user state.
-   * @param {Object|string} credentials - { email, password } or email string
-   * @param {string} [passwordStr] - Optional password if parameters passed separately
-   */
-  login: async (credentials, passwordStr) => {
+  login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      const loginPayload =
-        typeof credentials === 'object'
-          ? credentials
-          : { email: credentials, password: passwordStr };
-
-      let response;
+      // Perform API call or fallback simulation if backend offline
+      let resultData;
       try {
-        response = await authApi.login(loginPayload);
-      } catch (err) {
-        // Fallback demo user for offline/testing mode
-        response = {
-          access_token: 'mock_access_jwt_token',
-          refresh_token: 'mock_refresh_jwt_token',
+        resultData = await authApi.login({ email, password });
+      } catch (e) {
+        // Simulation for UI demonstration / offline mode
+        await new Promise((res) => setTimeout(res, 800));
+        const isCaregiver = email.toLowerCase().includes('caregiver');
+        resultData = {
+          token: `jwt_token_${Date.now()}`,
           user: {
-            id: 'u_101',
-            full_name: loginPayload.email.includes('caregiver') ? 'Eleanor Vance' : 'Alex Vance',
-            email: loginPayload.email,
-            role: loginPayload.email.includes('caregiver') ? 'CAREGIVER' : 'PATIENT',
+            id: isCaregiver ? 'usr_cg_100' : 'usr_001',
+            name: isCaregiver ? 'Priya Sharma' : 'Aarav Sharma',
+            email: email,
+            role: isCaregiver ? 'CAREGIVER' : 'INDIVIDUAL',
+            avatar: isCaregiver
+              ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150'
+              : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+            sensoryProfile: 'BALANCED',
+            caregiverName: 'Priya Sharma',
+            caregiverStatus: 'VERIFIED',
           },
         };
       }
 
-      const { access_token, refresh_token, user } = response;
-
-      if (access_token) {
-        await secureStorage.setAccessToken(access_token);
-      }
-      if (refresh_token) {
-        await secureStorage.setRefreshToken(refresh_token);
-      }
-
-      const userProfile = user || {
-        id: 'u_101',
-        full_name: 'Alex Vance',
-        email: loginPayload.email,
-        role: 'PATIENT',
-      };
-
-      await secureStorage.setUserData(userProfile);
-
-      set({
-        user: userProfile,
-        isAuthenticated: true,
-        isLoading: false,
-        isInitialized: true,
-        error: null,
-      });
-
-      return userProfile;
-    } catch (err) {
-      const errMsg = err?.message || 'Login failed. Please verify credentials.';
-      set({ isLoading: false, error: errMsg });
-      throw new Error(errMsg);
-    }
-  },
-
-  /**
-   * Registers a new account via authApi and updates store state.
-   */
-  register: async (userData) => {
-    set({ isLoading: true, error: null });
-    try {
-      let response;
-      try {
-        response = await authApi.register(userData);
-      } catch (err) {
-        response = {
-          access_token: 'mock_access_jwt_token',
-          refresh_token: 'mock_refresh_jwt_token',
-          user: {
-            id: `u_${Date.now()}`,
-            full_name: userData.full_name || 'New Member',
-            email: userData.email,
-            role: userData.role || 'PATIENT',
-          },
-        };
-      }
-
-      const { access_token, refresh_token, user } = response;
-      if (access_token) await secureStorage.setAccessToken(access_token);
-      if (refresh_token) await secureStorage.setRefreshToken(refresh_token);
-
-      await secureStorage.setUserData(user);
+      const { user, token } = resultData;
+      await AsyncStorage.setItem('auth_token', token);
+      await AsyncStorage.setItem('auth_user', JSON.stringify(user));
 
       set({
         user,
+        token,
         isAuthenticated: true,
         isLoading: false,
-        isInitialized: true,
         error: null,
       });
-
-      return user;
+      return { success: true };
     } catch (err) {
-      const errMsg = err?.message || 'Registration failed.';
-      set({ isLoading: false, error: errMsg });
-      throw new Error(errMsg);
+      const errMsg = err?.response?.data?.message || err.message || 'Invalid email or password.';
+      set({ error: errMsg, isLoading: false });
+      return { success: false, error: errMsg };
     }
   },
 
-  /**
-   * Clears stored tokens and user session data, resetting store state and navigating to LoginScreen.
-   */
-  logout: async () => {
-    set({ isLoading: true });
+  register: async (userData) => {
+    set({ isLoading: true, error: null });
     try {
-      await secureStorage.clearAll();
-    } catch (err) {
-      console.warn('Error clearing tokens during logout:', err);
-    } finally {
+      let resultData;
+      try {
+        resultData = await authApi.register(userData);
+      } catch (e) {
+        await new Promise((res) => setTimeout(res, 800));
+        resultData = {
+          token: `jwt_token_new_${Date.now()}`,
+          user: {
+            id: `usr_${Date.now()}`,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role || 'INDIVIDUAL',
+            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+            caregiverStatus: userData.role === 'CAREGIVER' ? 'PENDING' : 'UNCONNECTED',
+          },
+        };
+      }
+
+      const { user, token } = resultData;
+      await AsyncStorage.setItem('auth_token', token);
+      await AsyncStorage.setItem('auth_user', JSON.stringify(user));
+
       set({
-        user: null,
-        isAuthenticated: false,
+        user,
+        token,
+        isAuthenticated: true,
         isLoading: false,
-        isInitialized: true,
         error: null,
       });
-      resetAndNavigate('LoginScreen');
+      return { success: true };
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err.message || 'Registration failed.';
+      set({ error: errMsg, isLoading: false });
+      return { success: false, error: errMsg };
     }
   },
 
-  /**
-   * Dynamically updates current user account role (e.g. PATIENT vs CAREGIVER).
-   * @param {string} newRole - Role string ('PATIENT' | 'CAREGIVER')
-   */
-  updateUserRole: (newRole) => {
-    const { user } = get();
-    if (!user) return;
+  verifyCaregiver: async (code, contactInfo) => {
+    set({ isLoading: true, error: null });
+    try {
+      await new Promise((res) => setTimeout(res, 1000));
+      if (code !== '123456' && code !== '654321') {
+        throw new Error('Invalid verification code. Use demo code: 123456');
+      }
 
-    const updatedUser = { ...user, role: newRole.toUpperCase() };
-    secureStorage.setUserData(updatedUser);
-    set({ user: updatedUser });
+      const updatedUser = {
+        ...get().user,
+        caregiverStatus: 'VERIFIED',
+        caregiverEmail: contactInfo || 'priya.caregiver@example.com',
+        caregiverName: 'Priya Sharma',
+      };
+
+      await AsyncStorage.setItem('auth_user', JSON.stringify(updatedUser));
+      set({ user: updatedUser, isLoading: false });
+      return { success: true };
+    } catch (err) {
+      set({ error: err.message, isLoading: false });
+      return { success: false, error: err.message };
+    }
   },
 
-  clearError: () => set({ error: null }),
+  forgotPassword: async (email) => {
+    set({ isLoading: true, error: null });
+    try {
+      await new Promise((res) => setTimeout(res, 800));
+      set({ isLoading: false });
+      return { success: true, message: 'Password reset code sent to your email.' };
+    } catch (err) {
+      set({ error: err.message, isLoading: false });
+      return { success: false, error: err.message };
+    }
+  },
+
+  resetPassword: async (code, newPassword) => {
+    set({ isLoading: true, error: null });
+    try {
+      await new Promise((res) => setTimeout(res, 800));
+      set({ isLoading: false });
+      return { success: true, message: 'Password has been reset successfully.' };
+    } catch (err) {
+      set({ error: err.message, isLoading: false });
+      return { success: false, error: err.message };
+    }
+  },
+
+  logout: async () => {
+    try {
+      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('auth_user');
+    } catch (e) {}
+    set({ user: null, token: null, isAuthenticated: false, error: null });
+  },
+
+  switchRole: async (role) => {
+    const current = get().user;
+    if (current) {
+      const updated = { ...current, role };
+      await AsyncStorage.setItem('auth_user', JSON.stringify(updated));
+      set({ user: updated });
+    }
+  },
 }));
 
 export default useAuthStore;

@@ -1,59 +1,31 @@
-/**
- * PostComposer.jsx
- * Inline feed post composer trigger card component.
- */
+import React, { useState } from 'react';
+import { View, TextInput } from 'react-native';
+import AppButton from '../common/AppButton';
 
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
-import Avatar from '../common/Avatar';
+export const PostComposer = ({ onSubmit }) => {
+  const [content, setContent] = useState('');
 
-export const PostComposer = ({ onPress, placeholder = 'Share a sensory tip or ask the community...' }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
+  const handlePost = () => {
+    if (content.trim()) {
+      onSubmit(content.trim());
+      setContent('');
+    }
+  };
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={onPress}
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: colors.border,
-          borderRadius: borderRadius.lg,
-          padding: 10,
-          marginBottom: 12,
-          ...shadows.small,
-        },
-      ]}
-    >
-      <View style={styles.row}>
-        <Avatar name="User" size="small" />
-        <Text
-          style={{
-            color: colors.textMuted,
-            fontSize: typography.sizes.xs,
-            marginLeft: 10,
-            flex: 1,
-          }}
-        >
-          {placeholder}
-        </Text>
-        <Text style={{ fontSize: 18 }}>✏️</Text>
-      </View>
-    </TouchableOpacity>
+    <View className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 mb-4">
+      <TextInput
+        value={content}
+        onChangeText={setContent}
+        placeholder="Share an insight or ask the caregiver community..."
+        placeholderTextColor="#94A3B8"
+        multiline
+        numberOfLines={3}
+        className="text-sm text-slate-900 dark:text-white p-0 mb-3 min-h-[70px]"
+      />
+      <AppButton title="Post to Community" size="sm" onPress={handlePost} fullWidth={false} className="self-end" />
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-});
 
 export default PostComposer;

@@ -1,85 +1,23 @@
-/**
- * BrightnessMeter.jsx
- * Ambient lighting & display brightness sensitivity indicator component.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AppCard from '../common/AppCard';
 
-export const BrightnessMeter = ({ levelLux = 420, status = 'normal' }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography } = theme;
-
-  const isBright = levelLux > 600;
-  let statusColor = colors.status.success;
-  let statusText = 'Optimal Lighting';
-
-  if (isBright) {
-    statusColor = colors.status.warning;
-    statusText = 'High Glare / Bright';
-  }
-
-  const fillPct = Math.min(100, Math.max(0, (levelLux / 1000) * 100));
+export const BrightnessMeter = ({ lux = 300 }) => {
+  const isHigh = lux > 700;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={{ fontSize: 18, marginRight: 6 }}>💡</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.text, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-            Ambient Lighting Level
-          </Text>
-          <Text style={{ color: statusColor, fontSize: 11, fontWeight: 'bold' }}>
-            {statusText}
-          </Text>
-        </View>
-        <Text style={{ color: colors.text, fontSize: typography.sizes.md, fontWeight: 'bold' }}>
-          {levelLux} Lux
-        </Text>
+    <AppCard className="flex-1 ml-1.5">
+      <View className="flex-row items-center justify-between mb-2">
+        <Ionicons name="sunny-outline" size={22} color={isHigh ? '#F59E0B' : '#3B82F6'} />
+        <Text className="text-xs font-semibold text-slate-500">Light Meter</Text>
       </View>
-
-      <View
-        style={[
-          styles.track,
-          {
-            backgroundColor: colors.surfaceSubtle,
-            borderRadius: borderRadius.full,
-          },
-        ]}
-      >
-        <View
-          style={[
-            styles.fill,
-            {
-              width: `${fillPct}%`,
-              backgroundColor: statusColor,
-              borderRadius: borderRadius.full,
-            },
-          ]}
-        />
-      </View>
-    </View>
+      <Text className="text-2xl font-black text-slate-900 dark:text-white">{lux} Lux</Text>
+      <Text className="text-[11px] text-slate-400 mt-1">
+        {isHigh ? 'Bright Overhead Light' : 'Comfortable Lighting'}
+      </Text>
+    </AppCard>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  track: {
-    height: 10,
-    width: '100%',
-    overflow: 'hidden',
-  },
-  fill: {
-    height: 10,
-  },
-});
 
 export default BrightnessMeter;

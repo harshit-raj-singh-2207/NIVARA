@@ -1,75 +1,23 @@
-/**
- * CrowdIndicator.jsx
- * Crowd density level indicator component for location sensory tracking.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AppCard from '../common/AppCard';
 
-export const CrowdIndicator = ({ density = 'low', count = 4 }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography } = theme;
-
-  const isHigh = density === 'high';
-  const isMedium = density === 'medium';
-
-  let color = colors.status.success;
-  let label = 'Low Crowd Density';
-
-  if (isHigh) {
-    color = colors.status.error;
-    label = 'Crowded Space Warning';
-  } else if (isMedium) {
-    color = colors.status.warning;
-    label = 'Moderate People Nearby';
-  }
-
+export const CrowdIndicator = ({ density = 'MODERATE' }) => {
   return (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={{ fontSize: 18, marginRight: 6 }}>👥</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.text, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-            Crowd Density Radar
-          </Text>
-          <Text style={{ color: color, fontSize: 11, fontWeight: 'bold' }}>
-            {label}
-          </Text>
+    <AppCard className="flex-row items-center justify-between">
+      <View className="flex-row items-center space-x-3">
+        <View className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 items-center justify-center">
+          <Ionicons name="people-outline" size={20} color="#8B5CF6" />
         </View>
-
-        <View
-          style={[
-            styles.badge,
-            {
-              backgroundColor: colors.surfaceSubtle,
-              borderColor: color,
-              borderRadius: borderRadius.sm,
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-            },
-          ]}
-        >
-          <Text style={{ color: color, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-            ~{count} people nearby
-          </Text>
+        <View className="ml-3">
+          <Text className="text-base font-bold text-slate-900 dark:text-white">Crowd Density</Text>
+          <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Estimated Nearby Movement</Text>
         </View>
       </View>
-    </View>
+      <Text className="text-sm font-bold text-purple-600 dark:text-purple-400">{density}</Text>
+    </AppCard>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  badge: {
-    borderWidth: 1,
-  },
-});
 
 export default CrowdIndicator;

@@ -1,89 +1,27 @@
-/**
- * SafeZoneCard.jsx
- * Safe Zone / Geofence configuration card component.
- */
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AppCard from '../common/AppCard';
+import Badge from '../common/Badge';
 
 export const SafeZoneCard = ({ zone, onPress }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
-  if (!zone) return null;
-
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={onPress}
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: zone.active ? colors.primary : colors.border,
-          borderRadius: borderRadius.md,
-          padding: 10,
-          marginBottom: 8,
-          ...shadows.small,
-        },
-      ]}
-    >
-      <View style={styles.leftRow}>
-        <Text style={{ fontSize: 20, marginRight: 8 }}>🏡</Text>
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              color: colors.text,
-              fontSize: typography.sizes.xs,
-              fontWeight: typography.weights.bold,
-            }}
-          >
-            {zone.name || 'Home Geofence Zone'}
-          </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2 }}>
-            Radius: {zone.radiusMeters || 500}m • Alert: Multi-Caregiver
-          </Text>
+    <AppCard onPress={onPress} className="flex-row items-center justify-between">
+      <View className="flex-row items-center space-x-3 flex-1 mr-2">
+        <View className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-900/40 items-center justify-center">
+          <Ionicons name="shield-checkmark-outline" size={20} color="#14B8A6" />
         </View>
-
-        <View
-          style={[
-            styles.badge,
-            {
-              backgroundColor: zone.active ? colors.status.successBackground : colors.surface,
-              borderColor: zone.active ? colors.status.success : colors.border,
-              borderRadius: borderRadius.sm,
-              paddingHorizontal: 6,
-              paddingVertical: 2,
-            },
-          ]}
-        >
-          <Text
-            style={{
-              color: zone.active ? colors.status.success : colors.textMuted,
-              fontSize: 9,
-              fontWeight: 'bold',
-            }}
-          >
-            {zone.active ? 'ACTIVE' : 'INACTIVE'}
-          </Text>
+        <View className="ml-3 flex-1">
+          <Text className="text-base font-bold text-slate-900 dark:text-white">{zone.name}</Text>
+          <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{zone.radiusMeters}m Radius • {zone.address}</Text>
         </View>
       </View>
-    </TouchableOpacity>
+      <Badge
+        label={zone.inZone ? 'Inside' : 'Outside'}
+        variant={zone.inZone ? 'success' : 'warning'}
+      />
+    </AppCard>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-  },
-  leftRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  badge: {
-    borderWidth: 1,
-  },
-});
 
 export default SafeZoneCard;

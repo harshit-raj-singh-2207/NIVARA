@@ -1,54 +1,26 @@
-/**
- * BandStatus.jsx
- * Battery level and Bluetooth separation proximity indicator.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AppCard from '../common/AppCard';
 
-export const BandStatus = ({ batteryLevel = 88, signalStrength = -65, isSeparated = false }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography } = theme;
-
-  const isLowBattery = batteryLevel < 20;
-
+export const BandStatus = ({ band }) => {
   return (
-    <View style={styles.container}>
-      {/* Battery Indicator */}
-      <View style={styles.statItem}>
-        <Text style={{ fontSize: 16, marginRight: 4 }}>
-          {isLowBattery ? '🪫' : '🔋'}
-        </Text>
-        <Text style={{ color: isLowBattery ? colors.status.error : colors.text, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-          {batteryLevel}% Battery
-        </Text>
+    <AppCard className="flex-row items-center justify-between">
+      <View className="flex-row items-center space-x-3">
+        <View className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 items-center justify-center">
+          <Ionicons name="watch-outline" size={20} color="#6366F1" />
+        </View>
+        <View className="ml-3">
+          <Text className="text-base font-bold text-slate-900 dark:text-white">{band?.deviceId || 'NIVARA Band'}</Text>
+          <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Heart Rate: {band?.heartRate || 76} BPM</Text>
+        </View>
       </View>
-
-      {/* Proximity / Separation Status */}
-      <View style={styles.statItem}>
-        <Text style={{ fontSize: 16, marginRight: 4 }}>
-          {isSeparated ? '⚠️' : '📡'}
-        </Text>
-        <Text style={{ color: isSeparated ? colors.status.error : colors.textSecondary, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-          {isSeparated ? 'Band Separated!' : 'Proximity Safe'}
-        </Text>
+      <View className="items-end">
+        <Text className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Connected</Text>
+        <Text className="text-xs text-slate-400 mt-0.5">{band?.batteryLevel || 88}% Battery</Text>
       </View>
-    </View>
+    </AppCard>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingVertical: 6,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-});
 
 export default BandStatus;

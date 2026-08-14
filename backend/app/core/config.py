@@ -1,108 +1,88 @@
-"""
-Configuration Management for NIVARA backend using pydantic-settings.
-Loads environment variables, database configuration, security parameters,
-and core application metadata.
-"""
-
-from functools import lru_cache
-from typing import List, Union
-from pydantic import Field, field_validator
+from typing import List, Union, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
+from pydantic import Field, field_validator, model_validator, AliasChoices
 
 class Settings(BaseSettings):
-    """Application Settings loaded from environment variables or defaults."""
+    PROJECT_NAME: str = "CareMate AI Core Backend"
+    VERSION: str = "1.0.0"
+    API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = Field(default="development", validation_alias=AliasChoices("ENVIRONMENT", "ENV"))
+    DEBUG: bool = True
 
-    # Core Application Metadata
-    PROJECT_NAME: str = Field(
-        default="NIVARA AI Communication, Learning & Safety System",
-        description="Name of the application"
-    )
-    API_V1_STR: str = Field(
-        default="/api/v1",
-        description="API Version 1 URL prefix"
-    )
-    ENVIRONMENT: str = Field(
-        default="development",
-        description="Environment mode: development, staging, production"
-    )
-    DEBUG: bool = Field(
-        default=True,
-        description="Debug mode flag"
-    )
+    # Server Settings
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
 
-    # Server Configuration
-    HOST: str = Field(default="0.0.0.0", description="Host address to bind the server")
-    PORT: int = Field(default=8000, description="Port to run the backend server")
-    CORS_ORIGINS: Union[List[str], str] = Field(
-        default=["http://localhost:3000", "http://localhost:8080", "http://localhost:19006", "*"],
-        description="Allowed origins for CORS policy"
-    )
-
-    # MongoDB Database Configuration
-    MONGODB_URL: str = Field(
+    # Database
+    MONGODB_URI: str = Field(
         default="mongodb://localhost:27017",
-        description="MongoDB connection string URI"
+        validation_alias=AliasChoices("MONGODB_URI", "MONGODB_URL")
     )
-    DATABASE_NAME: str = Field(
-        default="nivara_db",
-        description="Target MongoDB database name"
-    )
-    MONGODB_MIN_POOL_SIZE: int = Field(
-        default=10,
-        description="Minimum database connection pool size"
-    )
-    MONGODB_MAX_POOL_SIZE: int = Field(
-        default=100,
-        description="Maximum database connection pool size"
-    )
+    DATABASE_NAME: str = Field(default="caremate_db", alias="DATABASE_NAME")
 
-    # Security & JWT Token Parameters
-    SECRET_KEY: str = Field(
-        default="nivara_super_secret_jwt_key_change_in_production_32bytes!",
-        description="Secret key used for signing JWT tokens"
+    # Security & JWT
+    JWT_SECRET: str = Field(
+        default="caremate_super_secret_jwt_key_998877665544332211",
+        validation_alias=AliasChoices("JWT_SECRET", "SECRET_KEY")
     )
-    JWT_ALGORITHM: str = Field(
-        default="HS256",
-        description="Hashing algorithm for JWT token signing"
-    )
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        default=60 * 24 * 7,  # 7 Days
-        description="Access token lifespan in minutes"
-    )
-    REFRESH_TOKEN_EXPIRE_MINUTES: int = Field(
-        default=60 * 24 * 30,  # 30 Days
-        description="Refresh token lifespan in minutes"
-    )
+    JWT_ALGORITHM: str = Field(default="HS256", alias="JWT_ALGORITHM")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=10080, alias="ACCESS_TOKEN_EXPIRE_MINUTES") # 7 days
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = Field(default=43200, alias="REFRESH_TOKEN_EXPIRE_MINUTES") # 30 days
 
-    # Sensor & Wearable Safety Settings
-    GEOFENCE_DEFAULT_RADIUS_METERS: float = Field(
-        default=500.0,
-        description="Default safe zone radius in meters for GPS Wearable system"
-    )
+    # CORS Origins
+    FRONTEND_ORIGIN: str = Field(default="http://localhost:8081", alias="FRONTEND_ORIGIN")
+    CORS_ORIGINS: Union[List[str], str] = [
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://localhost:8082",
+        "http://localhost:19006",
+        "http://localhost:3000",
+        "*"
+    ]
+
+    @property
+    def ENV(self) -> str:
+        return self.ENVIRONMENT
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",") if i.strip()]
+        if isinstance(v, list):
+            return v
+        return ["http://localhost:8081", "http://localhost:8082"]
+
+    # Email Service Config (Optional)
+    SMTP_HOST: Optional[str] = Field(default=None, alias="SMTP_HOST")
+    SMTP_PORT: Optional[int] = Field(default=587, alias="SMTP_PORT")
+    SMTP_USERNAME: Optional[str] = Field(default=None, alias="SMTP_USERNAME")
+    SMTP_PASSWORD: Optional[str] = Field(default=None, alias="SMTP_PASSWORD")
+    EMAIL_FROM: str = Field(default="no-reply@caremate.ai", alias="EMAIL_FROM")
+
+    # Notification Service Config (Optional)
+    NOTIFICATION_PROVIDER: str = Field(default="mock", alias="NOTIFICATION_PROVIDER")
+    EXPO_PUSH_API_URL: str = "https://exp.host/--/api/v2/push/send"
+
+    @model_validator(mode="after")
+    def validate_required_settings(self) -> "Settings":
+        required_fields = {
+            "MONGODB_URI": self.MONGODB_URI,
+            "DATABASE_NAME": self.DATABASE_NAME,
+            "JWT_SECRET": self.JWT_SECRET,
+            "JWT_ALGORITHM": self.JWT_ALGORITHM,
+            "ACCESS_TOKEN_EXPIRE_MINUTES": self.ACCESS_TOKEN_EXPIRE_MINUTES,
+            "FRONTEND_ORIGIN": self.FRONTEND_ORIGIN,
+        }
+        for name, value in required_fields.items():
+            if value is None or str(value).strip() == "":
+                raise ValueError(f"Required configuration variable '{name}' is missing!")
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=True,
         extra="ignore"
     )
 
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
-        """Convert comma-separated CORS string to a list of origins if necessary."""
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",") if i.strip()]
-        elif isinstance(v, (list, str)):
-            return v
-        raise ValueError(f"Invalid CORS_ORIGINS format: {v}")
+settings = Settings()
 
-
-@lru_cache()
-def get_settings() -> Settings:
-    """Singleton getter for application settings cached with LRU cache."""
-    return Settings()
-
-
-settings: Settings = get_settings()

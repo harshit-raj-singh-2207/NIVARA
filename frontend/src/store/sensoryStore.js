@@ -1,86 +1,46 @@
-/**
- * Sensory Zustand Store for NIVARA frontend.
- * Manages environmental sensor telemetry (noise dB, brightness lux, crowd density), sensory sensitivity thresholds, overload alerts, and social cue analysis.
- */
-
 import { create } from 'zustand';
-import sensoryApi from '../services/api/sensoryApi';
 
 export const useSensoryStore = create((set, get) => ({
-  noiseLevelDb: 78,
-  noiseThresholdDb: 85,
-  brightnessLux: 420,
-  brightnessThresholdLux: 800,
-  crowdDensity: 'medium',
-  crowdCount: 5,
-  activeAlert: {
-    type: 'SENSORY_WARNING',
-    severity: 'warning',
-    title: 'Ambient Noise Approaching Comfort Limit',
-    message: 'Decibels reached 78 dB. Consider putting on noise-canceling headphones.',
-    recommendedAction: 'Put on noise-canceling headphones or step outside',
+  noiseLevelDb: 42, // decibels
+  brightnessLux: 350, // lux
+  crowdDensity: 'MODERATE', // LOW, MODERATE, HIGH
+  sensoryAlert: null, // { type: 'NOISE_WARNING', message: 'High noise environment detected (78 dB)' }
+  preferences: {
+    noiseAlertThresholdDb: 70,
+    brightnessThresholdLux: 800,
+    enableSensoryVibration: true,
+    soothingSoundtrack: 'Gentle Ocean Waves',
   },
-  socialCue: {
-    icon: '😊',
-    title: 'Warm Greeting Tone Identified',
-    tone: 'Friendly & Welcoming',
-    emotion: 'Happy / Inviting',
-    bodyLanguage: 'Open posture, smiling, relaxed shoulders',
-    context: 'Friend or colleague starting a casual conversation',
-  },
-  suggestedResponses: [
-    'Hi! Good to see you today.',
-    'Thank you! How are you doing?',
-    'I am doing well, thanks for asking.',
+  socialCues: [
+    { id: 'sc_1', title: 'Crossed Arms', meaning: 'The person might feel closed off, defensive, or cold.', suggestion: 'Give them space and speak gently.' },
+    { id: 'sc_2', title: 'Eye Contact Avoidance', meaning: 'The person might be feeling overwhelmed or shy.', suggestion: 'Do not force eye contact; use calm posture.' },
+    { id: 'sc_3', title: 'Smiling with Nod', meaning: 'The person agrees or understands what you are saying.', suggestion: 'Continue speaking or give a friendly nod back.' },
   ],
-  isLoading: false,
-  error: null,
 
-  dismissAlert: () => set({ activeAlert: null }),
-  setNoiseThreshold: (newDb) => set({ noiseThresholdDb: newDb }),
-  setBrightnessThreshold: (newLux) => set({ brightnessThresholdLux: newLux }),
-
-  fetchEnvironmentalStatus: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const data = await sensoryApi.getEnvironmentalStatus();
-      set({
-        noiseLevelDb: data.noise_level_db ?? 78,
-        noiseThresholdDb: data.noise_threshold_db ?? 85,
-        brightnessLux: data.brightness_lux ?? 420,
-        crowdDensity: data.crowd_density ?? 'medium',
-        crowdCount: data.crowd_count ?? 5,
-        activeAlert: data.active_alert || null,
-        socialCue: data.social_cue || null,
-        suggestedResponses: data.suggested_responses || [],
-        isLoading: false,
-      });
-    } catch (err) {
-      set({ isLoading: false, error: err.message });
+  updateEnvironment: (data) => set(state => {
+    const noise = data.noiseLevelDb ?? state.noiseLevelDb;
+    let alert = null;
+    if (noise > state.preferences.noiseAlertThresholdDb) {
+      alert = {
+        id: `alt_${Date.now()}`,
+        type: 'NOISE_WARNING',
+        message: `High noise detected: ${noise} dB. Consider wearing headphones.`,
+        level: 'WARNING',
+      };
     }
-  },
+    return {
+      noiseLevelDb: noise,
+      brightnessLux: data.brightnessLux ?? state.brightnessLux,
+      crowdDensity: data.crowdDensity ?? state.crowdDensity,
+      sensoryAlert: alert || state.sensoryAlert,
+    };
+  }),
 
-  updateSensoryThresholds: async (noiseDb, brightnessLux) => {
-    set({ noiseThresholdDb: noiseDb, brightnessThresholdLux: brightnessLux });
-    try {
-      await sensoryApi.updateSensoryPreferences({
-        noise_threshold_db: noiseDb,
-        brightness_threshold_lux: brightnessLux,
-      });
-    } catch (err) {
-      console.warn('Failed to sync sensory thresholds:', err);
-    }
-  },
+  dismissAlert: () => set({ sensoryAlert: null }),
 
-  // Simulates sensor telemetry updates for polling demo
-  simulateSensorTick: () => {
-    const { noiseLevelDb, brightnessLux } = get();
-    const noiseVariance = (Math.random() - 0.5) * 6;
-    const brightnessVariance = (Math.random() - 0.5) * 40;
-    const newDb = Math.round(Math.max(40, Math.min(115, noiseLevelDb + noiseVariance)));
-    const newLux = Math.round(Math.max(100, Math.min(1200, brightnessLux + brightnessVariance)));
-    set({ noiseLevelDb: newDb, brightnessLux: newLux });
-  },
+  updatePreferences: (newPrefs) => set(state => ({
+    preferences: { ...state.preferences, ...newPrefs }
+  }))
 }));
 
 export default useSensoryStore;
