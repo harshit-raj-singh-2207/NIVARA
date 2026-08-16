@@ -1,72 +1,61 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import AppCard from '../common/AppCard';
-import { lightTheme } from '../../theme/lightTheme';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@react-navigation/native';
 
-const EmergencyContactCard = ({ name, role, onCall }) => {
+const EmergencyContactCard = ({ contact }) => {
+  const { colors } = useTheme();
+  
+  const handleCall = () => {
+    if (contact?.phone) {
+      Linking.openURL(`tel:${contact.phone}`);
+    }
+  };
+
+  const name = contact?.name || "Emergency Contact";
+  const relation = contact?.relation || "Caregiver";
+
   return (
-    <AppCard style={styles.cardContainer}>
-      <View style={styles.row}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{name.charAt(0)}</Text>
-        </View>
-        <View style={styles.info}>
-          <Text style={styles.name}>{name}</Text>
-          <Text style={styles.role}>{role}</Text>
-        </View>
-        <Pressable style={styles.callButton} onPress={onCall}>
-          <Text style={styles.callIcon}>📞</Text>
-        </Pressable>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={styles.infoBlock}>
+        <Text style={[styles.name, { color: colors.text }]}>{name}</Text>
+        <Text style={[styles.relation, { color: colors.text }]}>{relation}</Text>
       </View>
-    </AppCard>
+      <TouchableOpacity onPress={handleCall} style={[styles.callBtn, { backgroundColor: '#ef4444' }]} activeOpacity={0.8}>
+        <Ionicons name="call" size={20} color="#fff" />
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  cardContainer: {
-    padding: lightTheme.spacing.md,
+  card: { 
+    flexDirection: 'row', 
+    padding: 16, 
+    borderRadius: 16, 
+    borderWidth: 1, 
+    alignItems: 'center', 
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
   },
-  row: {
-    flexDirection: 'row',
+  infoBlock: { flex: 1 },
+  name: { fontSize: 18, fontWeight: '700' },
+  relation: { fontSize: 14, opacity: 0.6, marginTop: 4, fontWeight: '500' },
+  callBtn: { 
+    width: 48, 
+    height: 48, 
+    borderRadius: 24, 
+    justifyContent: 'center', 
     alignItems: 'center',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: lightTheme.colors.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: lightTheme.spacing.md,
-  },
-  avatarText: {
-    color: lightTheme.colors.primaryDark,
-    fontWeight: lightTheme.typography.weight.bold,
-    fontSize: lightTheme.typography.size.md,
-  },
-  info: {
-    flex: 1,
-  },
-  name: {
-    fontSize: lightTheme.typography.size.md,
-    color: lightTheme.colors.text.primary,
-    fontWeight: lightTheme.typography.weight.semiBold,
-  },
-  role: {
-    fontSize: lightTheme.typography.size.xs,
-    color: lightTheme.colors.text.secondary,
-    marginTop: 2,
-  },
-  callButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#e0f2fe',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  callIcon: {
-    fontSize: 20,
+    elevation: 4,
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   }
 });
 

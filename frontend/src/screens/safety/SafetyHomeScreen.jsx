@@ -1,118 +1,136 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useEffect, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
-import SOSButton from '../../components/safety/SOSButton';
-import BandStatus from '../../components/safety/BandStatus';
+import AppHeader from '../../components/common/AppHeader';
+import ConnectionStatus from '../../components/safety/ConnectionStatus';
 import LocationCard from '../../components/safety/LocationCard';
-import SafeZoneCard from '../../components/safety/SafeZoneCard';
-import EmergencyContactCard from '../../components/safety/EmergencyContactCard';
-import { lightTheme } from '../../theme/lightTheme';
+import SOSButton from '../../components/safety/SOSButton';
+import Loading from '../../components/common/Loading';
+import EventTimeline from '../../components/safety/EventTimeline';
+import { useSafety } from '../../hooks/useSafety';
+import { useBluetooth } from '../../hooks/useBluetooth';
+import { ROUTES } from '../../constants/routes';
+import { lightTheme } from '../../theme';
 
-const SafetyHomeScreen = () => {
-  const handleSOS = () => {
-    Alert.alert(
-      "SOS Sent",
-      "Emergency contacts and caregivers have been notified with your location.",
-      [{ text: "OK" }]
+/**
+ * The main landing screen for the Supported Individual.
+ * Focuses on high-legibility, a massive SOS button, and band connection status.
+ */
+const SafetyHomeScreen = ({ navigation }) => {
+  const { 
+    deviceLocation,
+    currentZone,
+    activeEmergency,
+    recentEvents,
+    isLoading,
+    loadDashboardData,
+    triggerEmergency,
+  } = useSafety();
+
+  const { bandStatus } = useBluetooth();
+
+  // Load data on mount
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  // Use a big SOS trigger wrapper
+  const handleSOS = useCallback(async () => {
+    const success = await triggerEmergency('APP_SOS');
+    if (success) {
+      // Immediately navigate to the active emergency screen
+      navigation.navigate(ROUTES.SAFETY.EMERGENCY_ACTIVE);
+    }
+  }, [triggerEmergency, navigation]);
+
+  // Navigate to Bluetooth Manager
+  const handleManageBand = useCallback(() => {
+    navigation.navigate(ROUTES.SAFETY.GPS_BAND);
+  }, [navigation]);
+
+  // If there's an active emergency, we should just show that screen instantly
+  useEffect(() => {
+    if (activeEmergency) {
+      navigation.navigate(ROUTES.SAFETY.EMERGENCY_ACTIVE);
+    }
+  }, [activeEmergency, navigation]);
+
+
+  if (isLoading && !deviceLocation) {
+    return (
+      <SafeAreaWrapper>
+        <AppHeader title="Nivara Home" />
+        <Loading message="Securing connection..." />
+      </SafeAreaWrapper>
     );
-  };
-
-  const handleCall = (name) => {
-    Alert.alert(`Calling ${name}...`);
-  };
+  }
 
   return (
-    <SafeAreaWrapper>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Safety</Text>
-      </View>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <SafeAreaWrapper style={styles.container}>
+      <AppHeader title="Nivara Home" />
+      
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={loadDashboardData}
+            tintColor={lightTheme.colors.primary}
+          />
+        }
+      >
         
-        <View style={styles.statusContainer}>
-          <Text style={styles.statusLabel}>Current Status</Text>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusBadgeText}>🟢 Safe & Monitored</Text>
-          </View>
+        {/* Core SOS Interaction */}
+        <View style={styles.sosContainer}>
+          <SOSButton onPress={handleSOS} />
         </View>
 
-        <SOSButton onPress={handleSOS} />
-        
-        <BandStatus isConnected={true} batteryLevel={85} />
-        
+        {/* GPS Band Connection */}
+        <ConnectionStatus 
+          bandStatus={bandStatus} 
+          onManagePress={handleManageBand} 
+        />
+
+        {/* Current Location & Zone Status */}
         <LocationCard 
-          address="123 Example Street, Cityville"
-          isTracking={true}
+          location={deviceLocation} 
+          currentZone={currentZone} 
         />
-        
-        <SafeZoneCard 
-          currentZone="Home"
-          status="safe" 
-        />
-        
-        <View style={styles.contactsSection}>
-          <Text style={styles.sectionTitle}>Emergency Contacts</Text>
-          <EmergencyContactCard 
-            name="Mom (Sarah)" 
-            role="Primary Caregiver" 
-            onCall={() => handleCall("Mom")} 
-          />
-          <EmergencyContactCard 
-            name="Dad (John)" 
-            role="Secondary Caregiver" 
-            onCall={() => handleCall("Dad")} 
-          />
-        </View>
-        
+
+        {/* Activity Timeline */}
+        {recentEvents && recentEvents.length > 0 && (
+          <View style={styles.timelineSection}>
+            <EventTimeline 
+              events={recentEvents} 
+              isLoading={false} 
+            />
+          </View>
+        )}
+
+        {/* Extra padding at bottom */}
+        <View style={{ height: 40 }} />
+
       </ScrollView>
     </SafeAreaWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: lightTheme.spacing.lg,
-    paddingTop: lightTheme.spacing.lg,
-    paddingBottom: lightTheme.spacing.sm,
-  },
-  headerTitle: {
-    fontSize: lightTheme.typography.size.xxxl,
-    fontWeight: lightTheme.typography.weight.bold,
-    color: lightTheme.colors.text.primary,
-  },
   container: {
-    padding: lightTheme.spacing.lg,
-    paddingBottom: lightTheme.spacing.huge,
+    flex: 1,
+    backgroundColor: lightTheme.colors.background,
   },
-  statusContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  scrollContent: {
+    padding: lightTheme.spacing.md,
+  },
+  sosContainer: {
     alignItems: 'center',
-    marginBottom: lightTheme.spacing.lg,
+    marginVertical: lightTheme.spacing.xl,
   },
-  statusLabel: {
-    fontSize: lightTheme.typography.size.lg,
-    color: lightTheme.colors.text.primary,
-    fontWeight: lightTheme.typography.weight.semiBold,
-  },
-  statusBadge: {
-    backgroundColor: lightTheme.colors.status.safeBg,
-    paddingHorizontal: lightTheme.spacing.md,
-    paddingVertical: lightTheme.spacing.sm,
-    borderRadius: lightTheme.borderRadius.md,
-  },
-  statusBadgeText: {
-    color: lightTheme.colors.status.safe,
-    fontWeight: lightTheme.typography.weight.bold,
-  },
-  contactsSection: {
+  timelineSection: {
     marginTop: lightTheme.spacing.lg,
   },
-  sectionTitle: {
-    fontSize: lightTheme.typography.size.lg,
-    color: lightTheme.colors.text.primary,
-    fontWeight: lightTheme.typography.weight.semiBold,
-    marginBottom: lightTheme.spacing.md,
-  }
 });
 
 export default SafetyHomeScreen;

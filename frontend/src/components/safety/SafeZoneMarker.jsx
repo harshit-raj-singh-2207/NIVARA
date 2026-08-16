@@ -1,75 +1,30 @@
 import React from 'react';
+import { Marker } from 'react-native-maps';
 import { View, StyleSheet } from 'react-native';
-import { Marker, Circle } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
-import { lightTheme } from '../../theme';
 
-/**
- * Interactive Map Marker used specifically when creating or editing a Safe Zone.
- * Ties a Marker and a Circle together so the user can visualize the exact boundary radius.
- *
- * @param {Object} props
- * @param {import('../../types/safety').LocationCoords} props.coordinate - Where the pin is currently placed
- * @param {number} props.radius - The radius of the geofence in meters
- * @param {boolean} [props.draggable=false] - Whether the user can drag the pin around the map
- * @param {Function} [props.onDragEnd] - Callback returning new coordinates after drag finishes
- */
-const SafeZoneMarker = ({
-  coordinate,
-  radius,
-  draggable = false,
-  onDragEnd,
-}) => {
-  if (!coordinate) return null;
-
+const SafeZoneMarker = ({ coordinate, name }) => {
   return (
-    <>
-      <Circle
-        center={coordinate}
-        radius={radius}
-        strokeWidth={2}
-        strokeColor={lightTheme.colors.primary}
-        fillColor="rgba(14, 165, 233, 0.25)" // Slightly darker than the regular map overlay
-      />
-      
-      <Marker
-        coordinate={coordinate}
-        draggable={draggable}
-        onDragEnd={(e) => {
-          if (onDragEnd && e.nativeEvent.coordinate) {
-            onDragEnd(e.nativeEvent.coordinate);
-          }
-        }}
-        anchor={{ x: 0.5, y: 0.5 }}
-      >
-        <View style={styles.pinContainer}>
-          <View style={styles.pinInner}>
-            <Ionicons name="location" size={16} color="#fff" />
-          </View>
-        </View>
-      </Marker>
-    </>
+    <Marker coordinate={coordinate} title={name || "Safe Zone"}>
+      <View style={styles.markerContainer}>
+        <Ionicons name="home" size={16} color="#ffffff" />
+      </View>
+    </Marker>
   );
 };
 
 const styles = StyleSheet.create({
-  pinContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pinInner: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: lightTheme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...lightTheme.shadows.md,
-  },
+  markerContainer: {
+    backgroundColor: '#10b981', // green indicating safety
+    padding: 6,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  }
 });
-
 export default SafeZoneMarker;
