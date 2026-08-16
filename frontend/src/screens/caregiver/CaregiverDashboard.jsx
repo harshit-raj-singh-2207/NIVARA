@@ -1,265 +1,214 @@
-/**
- * CaregiverDashboard.jsx
- * Complete, production-grade Primary Monitoring Hub for Caregivers in NIVARA.
- * Connects real-time dependent status, satellite GPS tracking, geofence breaches, BLE band battery, and remote action controls.
- */
-
-import React, { useEffect } from 'react';
-import {
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useTheme } from '../../theme';
-import { BRAND_COLORS, STATUS_COLORS } from '../../constants/colors';
-import useCaregiverStore from '../../store/caregiverStore';
-import caregiverApi from '../../services/api/caregiverApi';
-import { handleApiError, showSuccessAlert } from '../../utils/errorHandler';
-import AppHeader from '../../components/common/AppHeader';
-import AppCard from '../../components/common/AppCard';
-import AppButton from '../../components/common/AppButton';
-import Avatar from '../../components/common/Avatar';
+import React, { useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
+import ChildStatusCard from '../../components/caregiver/ChildStatusCard';
+import EmergencyStatus from '../../components/caregiver/EmergencyStatus';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
+import Badge from '../../components/common/Badge';
+import Avatar from '../../components/common/Avatar';
+import { useCaregiver } from '../../hooks/useCaregiver';
+import { ROUTES } from '../../constants/routes';
+import { lightTheme } from '../../theme';
 
-import CaregiverHeader from '../../components/caregiver/CaregiverHeader';
-import ChildStatusCard from '../../components/caregiver/ChildStatusCard';
-import CurrentLocationCard from '../../components/caregiver/CurrentLocationCard';
-import RoutineStatus from '../../components/caregiver/RoutineStatus';
-import DeviceStatus from '../../components/caregiver/DeviceStatus';
-import EmergencyStatus from '../../components/caregiver/EmergencyStatus';
-
-export const CaregiverDashboard = ({ navigation }) => {
-  const { theme } = useTheme();
-  const { colors, spacing, borderRadius, typography, shadows } = theme;
-
-  const {
-    dependents,
-    activeDependentId,
-    activeEmergencyAlert,
+/**
+ * Caregiver's primary landing screen.
+ * Shows a glanceable list of all children/individuals being tracked.
+ * Any active emergencies are surfaced at the very top.
+ */
+const CaregiverDashboard = ({ navigation }) => {
+  const { 
+    dashboardSummary,
     isLoading,
-    fetchCaregiverDashboard,
-    setActiveDependentId,
-    dismissEmergencyAlert,
-    sendCheckIn,
-    adjustSensoryLimit,
-  } = useCaregiverStore();
+    error,
+    loadDashboard,
+    selectChild,
+  } = useCaregiver();
 
   useEffect(() => {
-    fetchCaregiverDashboard();
-
-    // 5-second real-time polling interval for live dependent safety telemetry
-    const interval = setInterval(() => {
-      fetchCaregiverDashboard();
-    }, 5000);
-
-    return () => clearInterval(interval);
+    loadDashboard();
   }, []);
 
-  const handleRefresh = () => {
-    fetchCaregiverDashboard();
+  const handleChildPress = useCallback(async (childId) => {
+    await selectChild(childId);
+    navigation.navigate(ROUTES.CAREGIVER.CHILD_STATUS, { childId });
+  }, [selectChild, navigation]);
+
+  // Derive a flat list of children from the dashboard summary
+  const children = dashboardSummary?.children || [];
+
+  // Separate out anyone with active emergencies for top-section surfacing
+  const activeEmergencies = children.filter(
+    (c) => c.status?.safety?.isEmergencyActive
+  );
+
+  const renderChild = useCallback(({ item }) => (
+    <ChildStatusCard
+      child={item.profile}
+      status={item.status}
+      onPress={() => handleChildPress(item.profile.id)}
+    />
+  ), [handleChildPress]);
+
+  const keyExtractor = useCallback((item) => item.profile.id, []);
+
+  // Custom greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
   };
 
-  const activeDependent =
-    dependents.find((d) => d.id === activeDependentId) || dependents[0];
-
-  const handleSendCheckInPress = async () => {
-    try {
-      await sendCheckIn('Hi Alex! Caregiver checking in. Are you feeling okay?');
-      showSuccessAlert(
-        'Check-In Alert Dispatched',
-        `A gentle check-in notification was sent to ${activeDependent?.name || 'User'}.`
-      );
-    } catch (err) {
-      handleApiError(err, 'Check-In Dispatch Failed');
-    }
-  };
-
-  const handleRemoteSensoryAdjust = async () => {
-    Alert.alert(
-      '🎛️ Remote Sensory Adjustment',
-      `Lower ambient noise alert limit for ${activeDependent?.name || 'User'} to 75 dB?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Apply 75 dB Limit',
-          onPress: async () => {
-            try {
-              await adjustSensoryLimit(75);
-              showSuccessAlert('Sensory Threshold Updated', 'Remote noise threshold lowered to 75 dB.');
-            } catch (err) {
-              handleApiError(err, 'Remote Adjustment Failed');
-            }
-          },
-        },
-      ]
+  if (isLoading && !dashboardSummary) {
+    return (
+      <SafeAreaWrapper style={styles.container}>
+        <Loading message="Loading your dashboard..." />
+      </SafeAreaWrapper>
     );
-  };
-
-  const handleViewMap = () => {
-    if (navigation) {
-      navigation.navigate('LiveLocationScreen', { dependentId: activeDependentId });
-    } else {
-      Alert.alert('📍 Satellite GPS Map', `Navigating to live map for ${activeDependent?.name || 'User'}`);
-    }
-  };
-
-  const handleContactUser = () => {
-    Alert.alert(
-      '📞 Contact User',
-      `Directly calling ${activeDependent?.name || 'User'}'s paired device...`,
-      [{ text: 'End Call', style: 'cancel' }]
-    );
-  };
+  }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* 1. CAREGIVER HEADER WITH DEPENDENTS SELECTOR */}
-      <CaregiverHeader
-        dependents={dependents}
-        activeDependentId={activeDependentId}
-        onSelectDependent={(id) => setActiveDependentId(id)}
-      />
-
-      {isLoading && <Loading overlay={true} size="large" message="Syncing caregiver telemetry hub..." />}
-
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { padding: spacing.lg }]}
+    <SafeAreaWrapper style={styles.container}>
+      <FlatList
+        data={children}
+        keyExtractor={keyExtractor}
+        renderItem={renderChild}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
+            onRefresh={loadDashboard}
+            tintColor={lightTheme.colors.primary}
+            colors={[lightTheme.colors.primary]}
           />
         }
-      >
-        {/* 2. LIVE EMERGENCY ALERT BANNER */}
-        {activeEmergencyAlert && (
-          <EmergencyStatus
-            alert={activeEmergencyAlert}
-            onViewMap={handleViewMap}
-            onContactUser={handleContactUser}
-            onDismiss={dismissEmergencyAlert}
-          />
-        )}
+        ListHeaderComponent={
+          <>
+            {/* ── Top Bar: Greeting & Notification Icon ────── */}
+            <View style={styles.topBar}>
+              <View style={styles.greetingContainer}>
+                <Text style={styles.greetingText}>{getGreeting()},</Text>
+                <Text style={styles.caregiverName}>
+                  {dashboardSummary?.caregiverName || 'Caregiver'}
+                </Text>
+              </View>
 
-        {/* 3. DEPENDENT PROFILE OVERVIEW CARD */}
-        {activeDependent ? (
-          <ChildStatusCard
-            dependent={activeDependent}
-            onPress={() => (navigation ? navigation.navigate('ChildProfileScreen', { dependentId: activeDependent.id }) : null)}
-          />
-        ) : (
-          <EmptyState
-            icon="👶"
-            title="No Dependent Linked"
-            description="Enter a caregiver verification code to link a dependent profile."
-          />
-        )}
+              {/* Notification button (placeholder, Part 3 will wire this) */}
+              <View style={styles.topBarActions}>
+                {activeEmergencies.length > 0 && (
+                  <Badge 
+                    label={`${activeEmergencies.length} Alert`}
+                    status="emergency"
+                    style={styles.alertBadge}
+                  />
+                )}
+              </View>
+            </View>
 
-        {/* 4. SAFETY & LOCATION MONITORING CARD */}
-        <AppCard variant="bordered" style={{ marginBottom: spacing.lg }}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: colors.text,
-                fontSize: typography.sizes.sm,
-                fontWeight: typography.weights.bold,
-                marginBottom: spacing.xs,
-              },
-            ]}
-          >
-            📍 Safety & Geofence Location Monitoring
-          </Text>
+            {/* ── Active Emergency Banners (top priority) ────── */}
+            {activeEmergencies.length > 0 && (
+              <View style={styles.emergencySection}>
+                <View style={styles.sectionTitleRow}>
+                  <Ionicons name="warning" size={20} color={lightTheme.colors.status.emergency} />
+                  <Text style={[styles.sectionTitle, styles.emergencyTitle]}>
+                    Active Emergencies
+                  </Text>
+                </View>
+                {activeEmergencies.map(c => (
+                  <EmergencyStatus
+                    key={c.profile.id}
+                    emergency={c.status?.safety?.activeEmergency}
+                    onResolve={() => handleChildPress(c.profile.id)}
+                    isLoading={false}
+                  />
+                ))}
+              </View>
+            )}
 
-          <CurrentLocationCard
-            location={activeDependent?.location}
-            onViewMap={handleViewMap}
-          />
-        </AppCard>
-
-        {/* 5. ROUTINE & DEVICE STATUS WIDGET */}
-        <AppCard variant="elevated" style={[shadows.small, { marginBottom: spacing.lg }]}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: colors.text,
-                fontSize: typography.sizes.sm,
-                fontWeight: typography.weights.bold,
-                marginBottom: spacing.xs,
-              },
-            ]}
-          >
-            📊 Routine & Smart Wearable Telemetry
-          </Text>
-
-          {/* Routine Status Widget */}
-          <RoutineStatus routine={activeDependent?.routine} />
-
-          {/* Device Sync & Battery Status Widget */}
-          <DeviceStatus device={activeDependent?.device} />
-        </AppCard>
-
-        {/* 6. FAST ACTION CONTROLS */}
-        <AppCard variant="sensoryHighlight" style={{ marginBottom: spacing.xl }}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: colors.text,
-                fontSize: typography.sizes.sm,
-                fontWeight: typography.weights.bold,
-                marginBottom: spacing.sm,
-              },
-            ]}
-          >
-            ⚡ Remote Caregiver Fast Actions
-          </Text>
-
-          <View style={styles.actionRow}>
-            <AppButton
-              title="💬 Send Check-In"
-              onPress={handleSendCheckInPress}
-              variant="primary"
-              size="medium"
-              style={{ flex: 1, marginRight: 6 }}
+            {/* ── Children Section Title ────────────────────── */}
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="people" size={20} color={lightTheme.colors.text.primary} />
+              <Text style={styles.sectionTitle}>
+                Monitored Individuals
+                {children.length > 0 && (
+                  <Text style={styles.countText}>{` (${children.length})`}</Text>
+                )}
+              </Text>
+            </View>
+          </>
+        }
+        ListEmptyComponent={
+          !isLoading ? (
+            <EmptyState
+              icon="people-outline"
+              title="No Individuals Linked"
+              message="You haven't been added as a caregiver to any profiles yet. Ask a user to invite you from their Safety settings."
             />
-            <AppButton
-              title="🎛️ Sensory Settings"
-              onPress={handleRemoteSensoryAdjust}
-              variant="secondary"
-              size="medium"
-              style={{ flex: 1.1 }}
-            />
-          </View>
-        </AppCard>
-      </ScrollView>
-    </View>
+          ) : null
+        }
+      />
+    </SafeAreaWrapper>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: lightTheme.colors.background,
   },
-  scrollContent: {
-    paddingBottom: 40,
+  listContent: {
+    padding: lightTheme.spacing.md,
+    flexGrow: 1,
   },
-  sectionTitle: {
-    textAlign: 'left',
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: lightTheme.spacing.xl,
+    paddingTop: lightTheme.spacing.sm,
   },
-  actionRow: {
+  greetingContainer: {
+    flex: 1,
+  },
+  greetingText: {
+    ...lightTheme.typography.body1,
+    color: lightTheme.colors.text.secondary,
+  },
+  caregiverName: {
+    ...lightTheme.typography.h2,
+    color: lightTheme.colors.text.primary,
+    fontWeight: '700',
+  },
+  topBarActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+  },
+  alertBadge: {
+    marginLeft: lightTheme.spacing.sm,
+  },
+  emergencySection: {
+    marginBottom: lightTheme.spacing.lg,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: lightTheme.spacing.md,
+  },
+  sectionTitle: {
+    ...lightTheme.typography.h3,
+    color: lightTheme.colors.text.primary,
+    marginLeft: lightTheme.spacing.sm,
+  },
+  emergencyTitle: {
+    color: lightTheme.colors.status.emergency,
+  },
+  countText: {
+    ...lightTheme.typography.body2,
+    color: lightTheme.colors.text.secondary,
+    fontWeight: '400',
   },
 });
 

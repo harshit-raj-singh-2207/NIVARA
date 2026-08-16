@@ -74,7 +74,7 @@
       "expo-image-picker",
       "expo-document-picker",
       [
-        "expo-av",
+        "expo-audio",
         {
           "microphonePermission": "Nivara uses the microphone for speech-to-text communication."
         }
@@ -86,8 +86,13 @@
           "image": "./assets/images/splash.png",
           "imageWidth": 200
         }
-      ]
+      ],
+      "expo-asset"
     ],
+    "web": {
+      "favicon": "./assets/images/icon.png",
+      "bundler": "metro"
+    },
     "extra": {
       "eas": {
         "projectId": "your-eas-project-id"

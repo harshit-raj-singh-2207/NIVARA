@@ -1,68 +1,95 @@
+import { useCallback, useEffect } from 'react';
+import { useAuthStore } from '../store/authStore';
+import { authApi } from '../services/api/authApi';
+
 /**
- * Custom React Hook: useAuth
- * Connects UI components to useAuthStore & useUserStore for user authentication, session state, and RBAC role metadata.
+ * React Hook for Authentication.
+ * Connects the UI to the Zustand store and Auth API.
  */
-
-import { useCallback } from 'react';
-import useAuthStore from '../store/authStore';
-import useUserStore from '../store/userStore';
-
 export const useAuth = () => {
-  const {
-    user: authUser,
-    isAuthenticated,
-    isLoading: authLoading,
-    isInitialized,
-    error: authError,
+  const { 
+    user, 
+    token, 
+    isHydrating, 
+    isLoading, 
+    error,
+    hydrate, 
+    setSession, 
+    logout: clearSession,
+    setError,
+    setLoading
+  } = useAuthStore();
+
+  // Try to load any existing token on mount
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  const login = useCallback(async (email, password) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await authApi.login(email, password);
+      await setSession(data.token, data.user);
+      return true;
+    } catch (err) {
+      setError(err.message || 'Login failed');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [setSession, setError, setLoading]);
+
+  const register = useCallback(async (name, email, password) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await authApi.register({ name, email, password });
+      await setSession(data.token, data.user);
+      return true;
+    } catch (err) {
+      setError(err.message || 'Registration failed');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [setSession, setError, setLoading]);
+
+  const logout = useCallback(async () => {
+    await clearSession();
+  }, [clearSession]);
+
+  /**
+   * Sets the user role after registration (during onboarding)
+   * e.g., 'caregiver' or 'safety'
+   */
+  const setRole = useCallback(async (role) => {
+    if (!user) return false;
+    try {
+      setLoading(true);
+      // Example: await authApi.updateProfile({ role });
+      
+      const updatedUser = { ...user, role };
+      // Save it securely
+      await setSession(token, updatedUser);
+      return true;
+    } catch (err) {
+      setError('Failed to set role');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, token, setSession, setError, setLoading]);
+
+  return {
+    user,
+    token,
+    isHydrating,
+    isLoading,
+    error,
     login,
     register,
     logout,
-    updateUserRole,
-    clearError: clearAuthError,
-  } = useAuthStore();
-
-  const { user: userProfile, isCaregiver, role, updateProfile, updateSettings } = useUserStore();
-
-  const currentUser = userProfile || authUser;
-  const activeRole = role || currentUser?.role || 'user';
-  const isCaregiverAccount = isCaregiver || activeRole.toLowerCase() === 'caregiver' || activeRole.toLowerCase() === 'admin';
-
-  const handleLogin = useCallback(
-    async (credentials, password) => {
-      const loggedUser = await login(credentials, password);
-      return loggedUser;
-    },
-    [login]
-  );
-
-  const handleRegister = useCallback(
-    async (userData) => {
-      const newMember = await register(userData);
-      return newMember;
-    },
-    [register]
-  );
-
-  const handleLogout = useCallback(async () => {
-    await logout();
-  }, [logout]);
-
-  return {
-    user: currentUser,
-    isAuthenticated,
-    isLoading: authLoading,
-    isInitialized,
-    isCaregiver: isCaregiverAccount,
-    role: activeRole,
-    error: authError,
-    login: handleLogin,
-    register: handleRegister,
-    logout: handleLogout,
-    updateUserRole,
-    updateProfile,
-    updateSettings,
-    clearError: clearAuthError,
+    setRole,
   };
 };
-
-export default useAuth;

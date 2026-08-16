@@ -37,17 +37,17 @@ const ContactCard = ({ contact, onDelete }) => {
   return (
     <AppCard style={styles.card} noPadding>
       <View style={styles.container}>
-
+        
         {/* Left: Avatar & Info */}
         <View style={styles.infoSection}>
-          <Avatar
-            name={contact.name}
-            size={48}
-            style={styles.avatar}
+          <Avatar 
+            name={contact.name} 
+            size={48} 
+            style={styles.avatar} 
           />
           <View style={styles.textContainer}>
             <Text style={styles.nameText} numberOfLines={1}>{contact.name}</Text>
-
+            
             <View style={styles.detailsRow}>
               {contact.relationship && (
                 <Text style={styles.relationshipText}>
@@ -69,16 +69,16 @@ const ContactCard = ({ contact, onDelete }) => {
         {/* Right: Quick Actions */}
         <View style={styles.actionsSection}>
           {/* Action: Call */}
-          <TouchableOpacity
-            style={[styles.actionButton, styles.callButton]}
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.callButton]} 
             onPress={handleCall}
           >
             <Ionicons name="call" size={20} color={lightTheme.colors.primary} />
           </TouchableOpacity>
-
+          
           {/* Action: Message */}
-          <TouchableOpacity
-            style={[styles.actionButton, styles.messageButton]}
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.messageButton]} 
             onPress={handleMessage}
           >
             <Ionicons name="chatbubble" size={20} color={lightTheme.colors.primary} />
@@ -86,15 +86,15 @@ const ContactCard = ({ contact, onDelete }) => {
 
           {/* Action: Delete (optional edit mode) */}
           {onDelete && (
-            <TouchableOpacity
-              style={[styles.actionButton, styles.deleteButton]}
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.deleteButton]} 
               onPress={() => onDelete(contact.id)}
             >
               <Ionicons name="trash-outline" size={20} color={lightTheme.colors.status.emergency} />
             </TouchableOpacity>
           )}
         </View>
-
+        
       </View>
     </AppCard>
   );

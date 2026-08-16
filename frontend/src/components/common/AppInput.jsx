@@ -28,10 +28,10 @@ const AppInput = ({
 
   // Dynamic styling based on state
   const isError = !!error;
-  const borderColor = isError
-    ? lightTheme.colors.status.emergency
-    : isFocused
-      ? lightTheme.colors.primary
+  const borderColor = isError 
+    ? lightTheme.colors.status.emergency 
+    : isFocused 
+      ? lightTheme.colors.primary 
       : lightTheme.colors.border;
 
   return (
@@ -44,19 +44,19 @@ const AppInput = ({
       )}
 
       {/* Input Container */}
-      <View
+      <View 
         style={[
-          styles.inputContainer,
+          styles.inputContainer, 
           { borderColor },
           multiline && styles.multilineContainer
         ]}
       >
         {/* Left Icon (Optional) */}
         {icon && (
-          <Ionicons
-            name={icon}
-            size={20}
-            color={isFocused ? lightTheme.colors.primary : lightTheme.colors.text.secondary}
+          <Ionicons 
+            name={icon} 
+            size={20} 
+            color={isFocused ? lightTheme.colors.primary : lightTheme.colors.text.secondary} 
             style={styles.leftIcon}
           />
         )}
@@ -79,14 +79,14 @@ const AppInput = ({
 
         {/* Right Icon for Passwords */}
         {secureTextEntry && (
-          <TouchableOpacity
+          <TouchableOpacity 
             onPress={() => setIsPasswordVisible(!isPasswordVisible)}
             style={styles.eyeIcon}
           >
-            <Ionicons
-              name={isPasswordVisible ? 'eye-off' : 'eye'}
-              size={20}
-              color={lightTheme.colors.text.secondary}
+            <Ionicons 
+              name={isPasswordVisible ? 'eye-off' : 'eye'} 
+              size={20} 
+              color={lightTheme.colors.text.secondary} 
             />
           </TouchableOpacity>
         )}

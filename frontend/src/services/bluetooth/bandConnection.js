@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { bluetoothService } from './bluetoothService';
 import { useSafetyStore } from '../../store/safetyStore';
 import { safetyApi } from '../api/safetyApi';
@@ -163,29 +162,3 @@ export const bandConnection = {
     });
   }
 };
-=======
-/**
- * Bluetooth Low Energy (BLE) Band Connection Service for NIVARA.
- */
-
-export const bandConnection = {
-  checkBandConnection: async () => {
-    return {
-      isConnected: true,
-      deviceName: 'NIVARA Smart Band #402',
-      batteryLevel: 88,
-      signalStrength: -65,
-      isSeparated: false,
-    };
-  },
-
-  pairBand: async (pairingCode) => {
-    return {
-      success: true,
-      message: 'Band successfully paired!',
-    };
-  },
-};
-
-export default bandConnection;
->>>>>>> e7aded7bdfe7c0dc94f52e15f9e5062d81aba6f3

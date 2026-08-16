@@ -1,34 +1,33 @@
-/**
- * Splash Screen for NIVARA.
- * Displays app branding and automatically navigates to Onboarding or Login.
- */
-
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
-import { AUTH_ROUTES } from '../../constants/routes';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { useTheme } from '@react-navigation/native';
+import { useUser } from '../../hooks/useUser';
+import SecureStorage from '../../services/storage/secureStorage';
 
-export const SplashScreen = ({ navigation }) => {
-  const { theme } = useTheme();
-  const { colors, typography } = theme;
+const SplashScreen = ({ navigation }) => {
+  const { colors } = useTheme();
+  const { setUser } = useUser();
 
   useEffect(() => {
-    if (navigation && navigation.replace) {
-      const timer = setTimeout(() => {
-        navigation.replace(AUTH_ROUTES.ONBOARDING);
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [navigation]);
+    const bootstrapAsync = async () => {
+      try {
+        const token = await SecureStorage.getAuthToken();
+        // Here we will eventually dispatch an API call to validate the token
+        if (token) {
+          // navigate to Main
+        } else {
+          // navigate to Auth
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    bootstrapAsync();
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.primary, fontSize: typography.sizes.h1 }]}>
-        NIVARA
-      </Text>
-      <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: typography.sizes.sm }]}>
-        AI-Powered Communication, Learning & Safety Ecosystem
-      </Text>
+      <ActivityIndicator size="large" color={colors.primary} />
     </View>
   );
 };
@@ -36,17 +35,8 @@ export const SplashScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-  },
-  title: {
-    fontWeight: '800',
-    letterSpacing: 2,
-  },
-  subtitle: {
-    marginTop: 8,
-    textAlign: 'center',
+    alignItems: 'center',
   },
 });
 

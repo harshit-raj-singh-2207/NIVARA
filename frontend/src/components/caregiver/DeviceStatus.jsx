@@ -13,7 +13,7 @@ import AppCard from '../common/AppCard';
  * @param {import('../../types/caregiver').DeviceInfo[]} [props.devices=[]] 
  */
 const DeviceStatus = ({ devices = [] }) => {
-
+  
   if (!devices || devices.length === 0) {
     return (
       <AppCard style={styles.card}>
@@ -40,23 +40,23 @@ const DeviceStatus = ({ devices = [] }) => {
         <Ionicons name="watch-outline" size={20} color={lightTheme.colors.primary} />
         <Text style={styles.headerTitle}>Active Wearables</Text>
       </View>
-
+      
       <View style={styles.listContainer}>
         {devices.map((device, index) => {
           const isConnected = device.connectionStatus === 'connected';
           const isCritical = device.batteryLevel != null && device.batteryLevel <= 15;
           const isLast = index === devices.length - 1;
-
+          
           return (
             <View key={device.id} style={[styles.deviceRow, !isLast && styles.borderBottom]}>
-
+              
               {/* Device Main Info */}
               <View style={styles.deviceInfoContainer}>
                 <Text style={styles.deviceName}>{device.name}</Text>
-
+                
                 <View style={styles.subtitleRow}>
                   <View style={[
-                    styles.statusDot,
+                    styles.statusDot, 
                     { backgroundColor: isConnected ? lightTheme.colors.status.safe : lightTheme.colors.status.warning }
                   ]} />
                   <Text style={styles.subtitleText}>
@@ -71,10 +71,10 @@ const DeviceStatus = ({ devices = [] }) => {
                   styles.batteryBadge,
                   isCritical && styles.batteryCriticalBadge
                 ]}>
-                  <Ionicons
-                    name={getBatteryIcon(device.batteryLevel)}
-                    size={16}
-                    color={isCritical ? lightTheme.colors.status.emergency : lightTheme.colors.text.secondary}
+                  <Ionicons 
+                    name={getBatteryIcon(device.batteryLevel)} 
+                    size={16} 
+                    color={isCritical ? lightTheme.colors.status.emergency : lightTheme.colors.text.secondary} 
                   />
                   <Text style={[
                     styles.batteryText,

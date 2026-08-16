@@ -32,14 +32,14 @@ const CurrentLocationCard = ({ location, safeZones = [] }) => {
     <AppCard style={styles.card} noPadding>
       {/* Map Area */}
       <View style={styles.mapWrapper}>
-        <AppMapView
-          location={location}
-          safeZones={safeZones}
+        <AppMapView 
+          location={location} 
+          safeZones={safeZones} 
           height={220}
           scrollEnabled={false} // Disable scroll so it acts like a clean card, user can open fullscreen elsewhere
           zoomEnabled={false}
         />
-
+        
         {/* Live Badge Overlay */}
         <View style={styles.liveBadge}>
           <View style={styles.pulsingDot} />

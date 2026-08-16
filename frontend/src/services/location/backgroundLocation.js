@@ -1,130 +1,65 @@
+import * as TaskManager from 'expo-task-manager';
+import * as Location from 'expo-location';
+
+const BACKGROUND_LOCATION_TASK = 'BACKGROUND_LOCATION_TASK';
+
 /**
- * backgroundLocation.js
- * Persistent Background GPS Location Service for NIVARA.
- * Handles continuous background location tracking, battery efficiency adaptation, and geofence evaluations.
+ * Define the global background task.
+ * This runs even when the app is minimized or closed!
  */
-
-import { requestLocationPermission } from '../../utils/permissionUtils';
-import useSafetyStore from '../../store/safetyStore';
-import safetyApi from '../api/safetyApi';
-import geofenceService from './geofenceService';
-import { formatCoordinates } from '../../utils/locationUtils';
-
-class BackgroundLocationManager {
-  constructor() {
-    this.isTracking = false;
-    this.trackingInterval = null;
-    this.currentIntervalMs = 10000; // 10 seconds default
-    this.lastLatitude = 37.7749;
-    this.lastLongitude = -122.4194;
+TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
+  if (error) {
+    console.error('Background Location Task Error:', error);
+    return;
   }
-
-  /**
-   * Starts persistent background location tracking task.
-   */
-  async startBackgroundTracking() {
-    const permission = await requestLocationPermission();
-    if (permission?.status !== 'granted') {
-      console.warn('Background Location permission denied.');
-      return false;
+  if (data) {
+    const { locations } = data;
+    const latestLocation = locations[0];
+    
+    // TODO: In the future, this will ping safetyApi.js to send live location
+    // safetyApi.updateLocation(latestLocation);
+    
+    if (__DEV__) {
+      console.log('📍 [Background] Received location:', latestLocation.coords);
     }
+  }
+});
 
-    if (this.isTracking) return true;
-    this.isTracking = true;
-
-    useSafetyStore.setState({ isTracking: true });
-    console.log('📍 Background GPS Location Service Started.');
-
-    this.runLocationTaskLoop();
-    return true;
+/**
+ * Initialize and start tracking the device's location in the background
+ */
+export const startBackgroundLocation = async () => {
+  const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+  if (fgStatus !== 'granted') {
+    console.warn('Foreground location permission denied.');
+    return false;
   }
 
-  /**
-   * Main tracking loop emitting GPS updates and checking geofence breaches.
-   */
-  runLocationTaskLoop() {
-    this.stopTaskLoop();
-
-    this.trackingInterval = setInterval(async () => {
-      if (!this.isTracking) return;
-
-      // Simulate minor GPS drift / movement delta
-      const driftLat = (Math.random() - 0.5) * 0.0008;
-      const driftLng = (Math.random() - 0.5) * 0.0008;
-      this.lastLatitude += driftLat;
-      this.lastLongitude += driftLng;
-
-      const currentLat = this.lastLatitude;
-      const currentLng = this.lastLongitude;
-      const address = formatCoordinates(currentLat, currentLng);
-
-      // Evaluate geofence boundaries
-      const geofenceResult = geofenceService.evaluateLocation(currentLat, currentLng);
-
-      // Update safety store state
-      useSafetyStore.setState({
-        location: {
-          latitude: currentLat,
-          longitude: currentLng,
-          address,
-          isInsideSafeZone: geofenceResult.isInside,
-          lastUpdated: 'Just now',
-        },
-      });
-
-      // Send telemetry to backend
-      try {
-        await safetyApi.sendLocationUpdate({
-          latitude: currentLat,
-          longitude: currentLng,
-          accuracy: 5.0,
-          battery_level: 88,
-        });
-      } catch (err) {
-        console.warn('Failed to sync background location update to backend:', err);
+  const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+  if (bgStatus === 'granted') {
+    await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
+      accuracy: Location.Accuracy.Balanced,
+      timeInterval: 60000,          // Every 60 seconds
+      distanceInterval: 50,         // Value in meters
+      showsBackgroundLocationIndicator: true,
+      foregroundService: {
+        notificationTitle: "Nivara Locating",
+        notificationBody: "Monitoring safety zones in the background.",
       }
-
-      // Battery efficiency guard: adjust interval
-      this.adjustBatteryEfficiency(88);
-    }, this.currentIntervalMs);
+    });
+    return true;
+  } else {
+    console.warn('Background location permission denied.');
+    return false;
   }
+};
 
-  /**
-   * Dynamically adjusts tracking interval based on battery level.
-   */
-  adjustBatteryEfficiency(batteryLevel = 88) {
-    let targetInterval = 10000;
-    if (batteryLevel < 20) {
-      targetInterval = 30000; // Low battery: sample every 30s
-    } else if (batteryLevel < 50) {
-      targetInterval = 20000; // Medium battery: sample every 20s
-    } else {
-      targetInterval = 10000; // High battery: sample every 10s
-    }
-
-    if (targetInterval !== this.currentIntervalMs) {
-      this.currentIntervalMs = targetInterval;
-      this.runLocationTaskLoop();
-    }
+/**
+ * Stop tracking background location
+ */
+export const stopBackgroundLocation = async () => {
+  const hasStarted = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+  if (hasStarted) {
+    await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
   }
-
-  stopTaskLoop() {
-    if (this.trackingInterval) {
-      clearInterval(this.trackingInterval);
-      this.trackingInterval = null;
-    }
-  }
-
-  /**
-   * Stops persistent background location tracking task.
-   */
-  stopBackgroundTracking() {
-    this.stopTaskLoop();
-    this.isTracking = false;
-    useSafetyStore.setState({ isTracking: false });
-    console.log('🛑 Background GPS Location Service Stopped.');
-  }
-}
-
-export const backgroundLocation = new BackgroundLocationManager();
-export default backgroundLocation;
+};

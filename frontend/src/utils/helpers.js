@@ -1,5 +1,4 @@
 /**
-<<<<<<< HEAD
  * General purpose utility functions.
  * Pure functions with zero side-effects.
  */
@@ -23,18 +22,6 @@ export const generateId = (length = 8) => {
  * @returns {Function} - The debounced function
  */
 export const debounce = (func, wait) => {
-=======
- * Generic Helper Utilities for NIVARA frontend.
- */
-
-/**
- * Debounces a function call by wait milliseconds.
- * @param {Function} func
- * @param {number} wait
- * @returns {Function}
- */
-export const debounce = (func, wait = 300) => {
->>>>>>> e7aded7bdfe7c0dc94f52e15f9e5062d81aba6f3
   let timeout;
   return function executedFunction(...args) {
     const later = () => {
@@ -47,7 +34,6 @@ export const debounce = (func, wait = 300) => {
 };
 
 /**
-<<<<<<< HEAD
  * Creates a throttled function that only invokes func at most once per every wait milliseconds.
  * Useful for rate-limiting (e.g. scroll handlers, frequent location updates).
  * @param {Function} func - The function to throttle
@@ -55,14 +41,6 @@ export const debounce = (func, wait = 300) => {
  * @returns {Function} - The throttled function
  */
 export const throttle = (func, limit) => {
-=======
- * Throttles a function call so it executes at most once per limit milliseconds.
- * @param {Function} func
- * @param {number} limit
- * @returns {Function}
- */
-export const throttle = (func, limit = 300) => {
->>>>>>> e7aded7bdfe7c0dc94f52e15f9e5062d81aba6f3
   let inThrottle;
   return function executedFunction(...args) {
     if (!inThrottle) {
@@ -74,7 +52,6 @@ export const throttle = (func, limit = 300) => {
 };
 
 /**
-<<<<<<< HEAD
  * Creates a deep clone of the provided object or array.
  * Note: Only safe for JSON-serializable data (no functions, Dates, undefined, Infinity).
  * @param {any} obj - The object to clone
@@ -113,44 +90,4 @@ export const get = (obj, path, defaultValue = undefined) => {
       .reduce((res, key) => (res !== null && res !== undefined ? res[key] : res), obj);
   const result = typeof path === 'string' ? travel(/[,[\]]+?/) || travel(/[,[\].]+?/) : travel(/[,[\]]+?/);
   return result === undefined || result === obj ? defaultValue : result;
-=======
- * Creates a deep copy of a JSON-serializable object.
- * @param {*} obj
- * @returns {*} Cloned object
- */
-export const deepClone = (obj) => {
-  if (obj === null || typeof obj !== 'object') return obj;
-  try {
-    return JSON.parse(JSON.stringify(obj));
-  } catch (e) {
-    return { ...obj };
-  }
-};
-
-/**
- * Generates a unique string ID with optional prefix.
- * @param {string} prefix
- * @returns {string}
- */
-export const generateId = (prefix = 'id') => {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-};
-
-/**
- * Capitalizes the first letter of a string.
- * @param {string} str
- * @returns {string}
- */
-export const capitalize = (str) => {
-  if (!str) return '';
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
-
-export default {
-  debounce,
-  throttle,
-  deepClone,
-  generateId,
-  capitalize,
->>>>>>> e7aded7bdfe7c0dc94f52e15f9e5062d81aba6f3
 };

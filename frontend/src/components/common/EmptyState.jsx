@@ -29,10 +29,10 @@ const EmptyState = ({
     <View style={[styles.container, compact && styles.compactContainer, style]}>
       {/* Icon Circle */}
       <View style={[styles.iconWrapper, compact && styles.compactIconWrapper]}>
-        <Ionicons
-          name={icon}
-          size={compact ? 32 : 48}
-          color={lightTheme.colors.primary}
+        <Ionicons 
+          name={icon} 
+          size={compact ? 32 : 48} 
+          color={lightTheme.colors.primary} 
         />
       </View>
 
@@ -47,9 +47,9 @@ const EmptyState = ({
       {/* Optional Call to Action */}
       {buttonText && onButtonPress && (
         <View style={styles.buttonContainer}>
-          <AppButton
-            title={buttonText}
-            onPress={onButtonPress}
+          <AppButton 
+            title={buttonText} 
+            onPress={onButtonPress} 
             variant="outline"
           />
         </View>
