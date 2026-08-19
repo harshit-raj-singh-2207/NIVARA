@@ -1,14 +1,15 @@
-import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
-
-const TOKEN_KEY = 'nivara_jwt_token';
-const USER_ROLE_KEY = 'nivara_user_role';
-const USER_PROFILE_KEY = 'nivara_user_profile';
-
 /**
- * Zustand Store for Authentication
- * Handles secure storage of the JWT and user profile over app restarts.
+ * authStore.js
+ * Authentication Zustand Store for NIVARA frontend.
+ * Manages authentication state, user session persistence via secureStorage, and user role management.
  */
+
+import { create } from 'zustand';
+import secureStorage from '../services/storage/secureStorage';
+import authApi from '../services/api/authApi';
+import { resetAndNavigate } from '../navigation/navigationRef';
+import { registerSessionExpiredHandler } from '../services/auth/sessionEvents';
+
 export const useAuthStore = create((set, get) => ({
   user: null,         // Object containing profile and { role: 'caregiver' | 'safety' }
   token: null,        // JWT for API requests
@@ -20,24 +21,35 @@ export const useAuthStore = create((set, get) => ({
    * Called during App Bootstrap (e.g. by a hook or RootNavigator).
    * Reads SecureStore to re-authenticate the user without them logging in again.
    */
-  hydrate: async () => {
+  restoreSession: async () => {
+    set({ isLoading: true, error: null });
     try {
-      set({ isHydrating: true, error: null });
-      const [token, role, profileStr] = await Promise.all([
-        SecureStore.getItemAsync(TOKEN_KEY),
-        SecureStore.getItemAsync(USER_ROLE_KEY),
-        SecureStore.getItemAsync(USER_PROFILE_KEY)
-      ]);
+      const token = await secureStorage.getAccessToken();
+      const storedUser = await secureStorage.getUserData();
 
-      if (token && role && profileStr) {
-        set({ 
-          token, 
-          user: { ...JSON.parse(profileStr), role } 
+      if (token && storedUser) {
+        const verifiedUser = await authApi.getCurrentUser();
+        set({
+          user: verifiedUser || storedUser,
+          isAuthenticated: true,
+          isLoading: false,
+          isInitialized: true,
+          error: null,
         });
+        return true;
+      } else {
+        if (token || storedUser) await secureStorage.clearAll();
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          isInitialized: true,
+          error: null,
+        });
+        return false;
       }
-    } catch (error) {
-      console.warn('Auth Rehydration Failed:', error);
-      // Failsafe: clear potentially corrupted storage
+    } catch (err) {
+      console.warn('Session restoration failed:', err);
       await get().logout();
     } finally {
       set({ isHydrating: false });
@@ -45,30 +57,93 @@ export const useAuthStore = create((set, get) => ({
   },
 
   /**
-   * Action to save successful login data
+   * Alias helper for session initialization on startup.
    */
-  setSession: async (token, userProfile) => {
-    try {
-      set({ isLoading: true });
-      
-      // Save securely to device
-      await Promise.all([
-        SecureStore.setItemAsync(TOKEN_KEY, token),
-        SecureStore.setItemAsync(USER_ROLE_KEY, userProfile.role),
-        SecureStore.setItemAsync(USER_PROFILE_KEY, JSON.stringify(userProfile))
-      ]);
+  initializeAuth: async () => {
+    return await get().restoreSession();
+  },
 
-      set({ token, user: userProfile, error: null });
-    } catch (error) {
-      console.error('Failed to securely save session:', error);
-      set({ error: 'Failed to securely save session. Check device storage.' });
-    } finally {
-      set({ isLoading: false });
+  /**
+   * Executes login via authApi, stores tokens in secureStorage, and updates user state.
+   * @param {Object|string} credentials - { email, password } or email string
+   * @param {string} [passwordStr] - Optional password if parameters passed separately
+   */
+  login: async (credentials, passwordStr) => {
+    set({ isLoading: true, error: null });
+    try {
+      const loginPayload =
+        typeof credentials === 'object'
+          ? credentials
+          : { email: credentials, password: passwordStr };
+
+      const response = await authApi.login(loginPayload);
+
+      const { access_token, refresh_token, user } = response;
+
+      if (access_token) {
+        await secureStorage.setAccessToken(access_token);
+      }
+      if (refresh_token) {
+        await secureStorage.setRefreshToken(refresh_token);
+      }
+
+      if (!access_token || !user) throw new Error('The server returned an incomplete login response.');
+      const userProfile = user;
+
+      await secureStorage.setUserData(userProfile);
+      const persistedToken = await secureStorage.getAccessToken();
+      if (persistedToken !== access_token) throw new Error('Your session could not be saved. Please try again.');
+
+      set({
+        user: userProfile,
+        isAuthenticated: true,
+        isLoading: false,
+        isInitialized: true,
+        error: null,
+      });
+
+      return userProfile;
+    } catch (err) {
+      const errMsg = err?.message || 'Login failed. Please verify credentials.';
+      set({ isLoading: false, error: errMsg });
+      throw new Error(errMsg);
     }
   },
 
   /**
-   * Action to completely clear session and log out
+   * Registers a new account via authApi and updates store state.
+   */
+  register: async (userData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await authApi.register(userData);
+
+      const { access_token, refresh_token, user } = response;
+      if (access_token) await secureStorage.setAccessToken(access_token);
+      if (refresh_token) await secureStorage.setRefreshToken(refresh_token);
+
+      await secureStorage.setUserData(user);
+      const persistedToken = await secureStorage.getAccessToken();
+      if (persistedToken !== access_token) throw new Error('Your session could not be saved. Please try again.');
+
+      set({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        isInitialized: true,
+        error: null,
+      });
+
+      return user;
+    } catch (err) {
+      const errMsg = err?.message || 'Registration failed.';
+      set({ isLoading: false, error: errMsg });
+      throw new Error(errMsg);
+    }
+  },
+
+  /**
+   * Clears stored tokens and user session data, resetting store state and navigating to LoginScreen.
    */
   logout: async () => {
     try {
@@ -89,3 +164,15 @@ export const useAuthStore = create((set, get) => ({
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
 }));
+
+export default useAuthStore;
+
+registerSessionExpiredHandler(() => {
+  useAuthStore.setState({
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    isInitialized: true,
+    error: 'Your session has expired. Please sign in again.',
+  });
+});

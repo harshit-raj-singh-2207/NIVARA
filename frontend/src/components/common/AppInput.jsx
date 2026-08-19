@@ -143,6 +143,12 @@ const styles = StyleSheet.create({
   },
   multilineInput: {
     minHeight: 100,
+    borderWidth: 0,
+    outlineStyle: 'none',
+    backgroundColor: 'transparent',
+  },
+  leftIconWrapper: {
+    marginRight: 8,
   },
   eyeIcon: {
     padding: lightTheme.spacing.md,

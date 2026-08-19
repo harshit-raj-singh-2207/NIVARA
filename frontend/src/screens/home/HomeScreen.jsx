@@ -67,24 +67,246 @@ const HomeScreen = ({ navigation }) => {
             onPress={() => console.log('Navigate to AAC')} // Will bind when AAC module is built
           />
 
-          <HomeActionCard 
-            title="Community"
-            description="Connect with supportive groups and share experiences."
-            icon="people"
-            color="#10b981" 
-            onPress={() => console.log('Navigate to Community')}
-          />
+          <View style={styles.quickCommRow}>
+            {['I need help', 'I need space', "I can't speak", 'Sensory Overload'].map((phrase, idx) => (
+              <TouchableOpacity
+                key={idx}
+                activeOpacity={0.7}
+                onPress={() => handleQuickCommunication(phrase)}
+                style={[
+                  styles.quickCommChip,
+                  {
+                    backgroundColor: colors.surfaceSubtle,
+                    borderColor: colors.border,
+                    borderRadius: borderRadius.md,
+                    paddingVertical: spacing.xs + 2,
+                    paddingHorizontal: spacing.sm,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: colors.primary,
+                    fontSize: typography.sizes.xs,
+                    fontWeight: typography.weights.semibold,
+                  }}
+                >
+                  💬 {phrase}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <AppButton title="Open Communication Assistant" variant="outline" size="small" onPress={() => navigation.navigate('CommunicationFlow')} style={{ marginTop: spacing.sm }} />
+        </AppCard>
 
-          <HomeActionCard 
-            title="Learning & Skills"
-            description="Access interactive routines, courses, and calming sensory tools."
-            icon="bulb"
-            color="#f59e0b" 
-            onPress={() => console.log('Navigate to Learning')}
-          />
+        {/* 3. SAFETY & LOCATION STATUS WIDGET */}
+        <AppCard variant="elevated" style={{ marginBottom: spacing.md }}>
+          <View style={styles.cardHeaderRow}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color: colors.text,
+                  fontSize: typography.sizes.md,
+                  fontWeight: typography.weights.bold,
+                },
+              ]}
+            >
+              📍 Location & Geofence Safety
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: typography.sizes.xs }}>
+              Sync: {bandStatus.lastSync}
+            </Text>
+          </View>
 
-        </View>
+          <View style={styles.statusBoxRow}>
+            <View
+              style={[
+                styles.statusBox,
+                {
+                  backgroundColor: colors.surfaceSubtle,
+                  borderColor: colors.border,
+                  borderRadius: borderRadius.md,
+                  padding: spacing.sm,
+                  flex: 1,
+                  marginRight: spacing.xs,
+                },
+              ]}
+            >
+              <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs }}>
+                Current Zone
+              </Text>
+              <Text
+                style={{
+                  color: colors.status.success,
+                  fontSize: typography.sizes.sm,
+                  fontWeight: typography.weights.bold,
+                  marginTop: 2,
+                }}
+              >
+                {bandStatus.safeZone}
+              </Text>
+            </View>
 
+            <View
+              style={[
+                styles.statusBox,
+                {
+                  backgroundColor: colors.surfaceSubtle,
+                  borderColor: colors.border,
+                  borderRadius: borderRadius.md,
+                  padding: spacing.sm,
+                  flex: 1,
+                  marginLeft: spacing.xs,
+                },
+              ]}
+            >
+              <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs }}>
+                GPS Band Battery
+              </Text>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: typography.sizes.sm,
+                  fontWeight: typography.weights.bold,
+                  marginTop: 2,
+                }}
+              >
+                ⚡ {bandStatus.batteryLevel}% (Normal)
+              </Text>
+            </View>
+          </View>
+        </AppCard>
+
+        {/* 4. ROUTINES & DAILY LIFE CARD */}
+        <AppCard variant="sensoryHighlight" style={{ marginBottom: spacing.md }}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.text,
+                fontSize: typography.sizes.md,
+                fontWeight: typography.weights.bold,
+                marginBottom: spacing.xs,
+              },
+            ]}
+          >
+            📅 Routines & Daily Life
+          </Text>
+
+          <Text
+            style={{
+              color: colors.text,
+              fontSize: typography.sizes.sm,
+              fontWeight: typography.weights.semibold,
+            }}
+          >
+            Active Routine: {activeRoutine.title}
+          </Text>
+          <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs, marginTop: 2 }}>
+            Time: {activeRoutine.time}
+          </Text>
+
+          {/* Transition Warning Banner */}
+          <View
+            style={[
+              styles.transitionBanner,
+              {
+                backgroundColor: colors.status.warningBackground,
+                borderColor: colors.status.warning,
+                borderRadius: borderRadius.md,
+                padding: spacing.sm,
+                marginTop: spacing.sm,
+              },
+            ]}
+          >
+            <Text
+              style={{
+                color: colors.status.warning,
+                fontSize: typography.sizes.xs,
+                fontWeight: typography.weights.bold,
+              }}
+            >
+              ⚠️ TRANSITION WARNING
+            </Text>
+            <Text style={{ color: colors.text, fontSize: typography.sizes.xs, marginTop: 2 }}>
+              {activeRoutine.warning}
+            </Text>
+          </View>
+          <AppButton title="Open Learning & Daily Life" variant="outline" size="small" onPress={() => navigation.navigate('LearningFlow')} style={{ marginTop: spacing.sm }} />
+        </AppCard>
+
+        {/* 5. CAREGIVER ACCESS TOGGLE / LINKED PATIENTS (ONLY IF USER IS CAREGIVER) */}
+        {isCaregiver ? (
+          <AppCard variant="elevated" style={{ marginBottom: spacing.lg }}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color: colors.text,
+                  fontSize: typography.sizes.md,
+                  fontWeight: typography.weights.bold,
+                  marginBottom: spacing.xs,
+                },
+              ]}
+            >
+              👥 Linked Patients & Caregiver Monitoring
+            </Text>
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: typography.sizes.xs,
+                marginBottom: spacing.md,
+              }}
+            >
+              Real-time monitoring for users linked to your caregiver account.
+            </Text>
+
+            {linkedUsers && linkedUsers.length > 0 ? (
+              linkedUsers.map((linkedUser, index) => (
+                <View
+                  key={linkedUser.id || index}
+                  style={[
+                    styles.linkedUserCard,
+                    {
+                      backgroundColor: colors.surfaceSubtle,
+                      borderColor: colors.border,
+                      borderRadius: borderRadius.md,
+                      padding: spacing.md,
+                      marginBottom: spacing.xs,
+                    },
+                  ]}
+                >
+                  <View style={styles.linkedUserRow}>
+                    <Avatar name={linkedUser.full_name} size="medium" status="online" />
+                    <View style={{ marginLeft: spacing.sm, flex: 1 }}>
+                      <Text
+                        style={{
+                          color: colors.text,
+                          fontSize: typography.sizes.sm,
+                          fontWeight: typography.weights.bold,
+                        }}
+                      >
+                        {linkedUser.full_name}
+                      </Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs }}>
+                        Status: 🟢 Home Geofence (Safe)
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <EmptyState
+                icon="👥"
+                title="No Linked Patients"
+                description="You currently have no patient accounts linked to your caregiver dashboard."
+                actionTitle="Link Patient Account"
+                onActionPress={() => navigation && navigation.navigate('CaregiverVerification')}
+              />
+            )}
+          </AppCard>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

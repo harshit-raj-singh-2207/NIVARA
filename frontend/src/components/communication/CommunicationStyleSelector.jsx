@@ -1,0 +1,5 @@
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '../../theme';
+export default function CommunicationStyleSelector({ value, onChange }) { const { theme } = useTheme(); const { colors, borderRadius, typography } = theme; return <View style={styles.row} accessibilityRole="radiogroup">{['simple', 'friendly', 'formal'].map(option => <TouchableOpacity key={option} accessibilityRole="radio" accessibilityState={{ checked: value === option }} onPress={() => onChange(option)} style={[styles.button, { backgroundColor: value === option ? colors.primary : colors.surface, borderColor: value === option ? colors.primary : colors.border, borderRadius: borderRadius.md }]}><Text style={{ color: value === option ? '#fff' : colors.text, fontSize: typography.sizes.sm, fontWeight: typography.weights.semibold }}>{option[0].toUpperCase() + option.slice(1)}</Text></TouchableOpacity>)}</View>; }
+const styles = StyleSheet.create({ row: { flexDirection: 'row', gap: 8 }, button: { flex: 1, minHeight: 48, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } });
