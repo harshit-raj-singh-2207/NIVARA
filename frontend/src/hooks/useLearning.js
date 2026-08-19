@@ -1,4 +1,4 @@
-/**
+  /**
  * Custom React Hook: useLearning
  * Connects UI components to useLearningStore for daily routine tasks, step completion progress, and transition reminders.
  */
@@ -21,7 +21,7 @@ export const useLearning = () => {
   } = useLearningStore();
 
   useEffect(() => {
-    fetchRoutines();
+    fetchRoutines().catch(() => {});
   }, [fetchRoutines]);
 
   const activeRoutine = routines.find((r) => r.id === activeRoutineId) || routines[0];

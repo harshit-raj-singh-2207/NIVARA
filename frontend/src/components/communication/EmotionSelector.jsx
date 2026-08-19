@@ -8,12 +8,12 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { useTheme } from '../../theme';
 
 export const EMOTION_OPTIONS = [
-  { id: 'calm', label: 'Calm', icon: '🧘', color: '#10B981' },
-  { id: 'happy', label: 'Happy', icon: '😊', color: '#3B82F6' },
-  { id: 'overwhelmed', label: 'Overwhelmed', icon: '😟', color: '#F59E0B' },
-  { id: 'anxious', label: 'Anxious', icon: '😨', color: '#8B5CF6' },
-  { id: 'frustrated', label: 'Frustrated', icon: '😡', color: '#EF4444' },
-  { id: 'tired', label: 'Tired', icon: '😴', color: '#64748B' },
+  { id: 'calm', label: 'Calm', icon: '🧘', color: '#6F9674' },
+  { id: 'happy', label: 'Happy', icon: '😊', color: '#8FA58A' },
+  { id: 'overwhelmed', label: 'Overwhelmed', icon: '😟', color: '#D5A45A' },
+  { id: 'anxious', label: 'Anxious', icon: '😨', color: '#6D4C5B' },
+  { id: 'frustrated', label: 'Frustrated', icon: '😡', color: '#C76B67' },
+  { id: 'tired', label: 'Tired', icon: '😴', color: '#766D70' },
 ];
 
 export const EmotionSelector = ({ selectedEmotion = 'calm', onSelectEmotion, style }) => {

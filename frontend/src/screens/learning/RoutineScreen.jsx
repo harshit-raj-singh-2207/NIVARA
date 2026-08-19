@@ -4,7 +4,7 @@
  * Connects routine timelines, task step checklists, transition reminders, and progress tracking.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -20,6 +20,7 @@ import { handleApiError } from '../../utils/errorHandler';
 import AppHeader from '../../components/common/AppHeader';
 import AppCard from '../../components/common/AppCard';
 import AppButton from '../../components/common/AppButton';
+import AppInput from '../../components/common/AppInput';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 
@@ -29,10 +30,16 @@ import TaskStep from '../../components/learning/TaskStep';
 import ProgressBar from '../../components/learning/ProgressBar';
 import ReminderCard from '../../components/learning/ReminderCard';
 import { LEARNING_ROUTES } from '../../constants/routes';
+import learningApi from '../../services/api/learningApi';
 
 export const RoutineScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const { colors, spacing, borderRadius, typography, shadows } = theme;
+  const [routineTitle, setRoutineTitle] = useState('');
+  const [routineTime, setRoutineTime] = useState('Morning');
+  const [taskTitle, setTaskTitle] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   const {
     routines,
@@ -46,11 +53,11 @@ export const RoutineScreen = ({ navigation }) => {
   } = useLearningStore();
 
   useEffect(() => {
-    fetchRoutines();
+    fetchRoutines().catch(() => {});
   }, []);
 
   const handleRefresh = () => {
-    fetchRoutines();
+    fetchRoutines().catch(() => {});
   };
 
   // Find currently active routine object
@@ -76,6 +83,48 @@ export const RoutineScreen = ({ navigation }) => {
       await toggleStepCompletion(taskId, stepId);
     } catch (err) {
       handleApiError(err, 'Failed to update step');
+    }
+  };
+
+  const handleCreateRoutine = async () => {
+    const cleanRoutine = routineTitle.trim();
+    const cleanTask = taskTitle.trim();
+    if (cleanRoutine.length < 2 || cleanTask.length < 2) {
+      setCreateError('Enter both a routine name and its first task.');
+      return;
+    }
+
+    setCreating(true);
+    setCreateError('');
+    try {
+      let steps;
+      try {
+        const breakdown = await learningApi.breakDownTask(cleanTask, 'simple');
+        steps = breakdown.generated_steps || [];
+      } catch (aiError) {
+        const stamp = Date.now();
+        steps = [
+          { id: `step_${stamp}_1`, title: `Prepare for ${cleanTask}`, description: 'Collect what you need and get ready.', completed: false },
+          { id: `step_${stamp}_2`, title: `Complete ${cleanTask}`, description: 'Work through the task one part at a time.', completed: false },
+          { id: `step_${stamp}_3`, title: 'Check and finish', description: 'Make sure the task is complete.', completed: false },
+        ];
+      }
+
+      const stamp = Date.now();
+      const created = await learningApi.createRoutine({
+        title: cleanRoutine,
+        time: routineTime.trim() || 'Any time',
+        icon: '📅',
+        tasks: [{ id: `task_${stamp}`, title: cleanTask, icon: '✅', time: routineTime.trim() || 'Scheduled', steps }],
+      });
+      await fetchRoutines();
+      setActiveRoutineId(created.id);
+      setRoutineTitle('');
+      setTaskTitle('');
+    } catch (err) {
+      setCreateError(err.message || 'Could not create the routine.');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -109,6 +158,36 @@ export const RoutineScreen = ({ navigation }) => {
             onDismiss={dismissReminder}
           />
         )}
+
+        <AppCard variant="bordered" style={{ marginBottom: spacing.lg }}>
+          <Text style={[styles.sectionTitle, { color: colors.text, fontSize: typography.sizes.sm, fontWeight: typography.weights.bold, marginBottom: spacing.sm }]}>Add a daily routine</Text>
+          <AppInput
+            label="Routine name"
+            placeholder="Example: Morning routine"
+            value={routineTitle}
+            onChangeText={setRoutineTitle}
+            autoCapitalize="sentences"
+            maxLength={120}
+          />
+          <AppInput
+            label="Time or period"
+            placeholder="Example: 8:00 AM or Morning"
+            value={routineTime}
+            onChangeText={setRoutineTime}
+            autoCapitalize="sentences"
+            maxLength={80}
+          />
+          <AppInput
+            label="First task"
+            placeholder="Example: Brush my teeth"
+            value={taskTitle}
+            onChangeText={setTaskTitle}
+            autoCapitalize="sentences"
+            maxLength={200}
+          />
+          {createError ? <Text accessibilityRole="alert" style={{ color: colors.status.error, marginBottom: spacing.sm }}>{createError}</Text> : null}
+          <AppButton title="Create Routine & Steps" loading={creating} disabled={creating} onPress={handleCreateRoutine} />
+        </AppCard>
 
         {/* 2. DAILY ROUTINE TIMELINE */}
         <Text
@@ -193,8 +272,8 @@ export const RoutineScreen = ({ navigation }) => {
             icon="📅"
             title="No Tasks Found"
             description="No scheduled tasks found for this routine period."
-            actionTitle="Refresh Routines"
-            onActionPress={handleRefresh}
+            actionTitle={activeRoutine ? 'Refresh Routines' : undefined}
+            onActionPress={activeRoutine ? handleRefresh : undefined}
           />
         )}
       </ScrollView>

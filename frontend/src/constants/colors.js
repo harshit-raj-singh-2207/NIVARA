@@ -5,41 +5,41 @@
  */
 
 export const PALETTE = {
-  // Primary Brand Colors (Calming & Trustworthy Blues)
+  // Primary brand colors (warm plum)
   primary: {
-    50: '#F0F7FF',
-    100: '#E0EFFE',
-    500: '#2563EB', // Main Action Buttons, Headers
-    700: '#1D4ED8',
-    900: '#1E3A8A',
+    50: '#F5EFF2',
+    100: '#EADDE3',
+    500: '#6D4C5B', // Main Action Buttons, Headers
+    700: '#593C49',
+    900: '#3F2A34',
   },
 
   // Sensory-Soothing Soft Colors (Low Overload / Gentle Contrast)
   sensory: {
-    soothingSage: '#E2EFCB',   // Calming state background
-    softTeal: '#E0F2FE',       // Sensory comfort badge
-    lavenderMuted: '#EDE9FE',  // Social/Communication cards
-    warmCream: '#FFFBEB',      // Low-contrast reading view
-    mutedGray: '#F3F4F6',      // Background neutral
+    soothingSage: '#E8EFE6',
+    softTeal: '#EEF2EA',
+    lavenderMuted: '#F3EAED',
+    warmCream: '#FAF7F2',
+    mutedGray: '#FAF7F2',
   },
 
   // Safety & Alert Colors (High Visibility)
   safety: {
-    sosRed: '#DC2626',         // Emergency SOS Hold Button
-    sosRedLight: '#FEE2E2',    // SOS Active Banner Background
-    warningAmber: '#F59E0B',  // Geofence / RSSI Low Signal
-    safeGreen: '#10B981',     // Connected Band / Inside Safe Zone
-    infoBlue: '#3B82F6',      // Status Updates
+    sosRed: '#C76B67',
+    sosRedLight: '#F8E8E6',
+    warningAmber: '#D5A45A',
+    safeGreen: '#6F9674',
+    infoBlue: '#8FA58A',
   },
 
   // Neutrals (High Readability & Accessibility)
   neutral: {
     surfaceLight: '#FFFFFF',
     surfaceDark: '#121212',
-    textPrimary: '#1F2937',   // WCAG Compliant High Contrast
-    textSecondary: '#6B7280', // Muted Subtitles
-    textDisabled: '#9CA3AF',
-    border: '#E5E7EB',
+    textPrimary: '#302B2D',
+    textSecondary: '#766D70',
+    textDisabled: '#A69C9F',
+    border: '#E7DED8',
   },
 };
 
@@ -71,46 +71,46 @@ export const THEME = {
 };
 
 export const BRAND_COLORS = {
-  primary: '#4F46E5', // Deep Indigo
-  primaryLight: '#6366F1',
-  primaryDark: '#3730A3',
-  secondary: '#10B981', // Soothing Teal/Emerald
-  secondaryLight: '#34D399',
-  accent: '#F59E0B', // Soft Warm Amber
-  purple: '#8B5CF6',
-  pink: '#EC4899',
+  primary: '#6D4C5B',
+  primaryLight: '#EADDE3',
+  primaryDark: '#593C49',
+  secondary: '#8FA58A',
+  secondaryLight: '#DCE7D9',
+  accent: '#D98B73',
+  purple: '#876878',
+  pink: '#C98283',
 };
 
 export const SENSORY_PALETTES = {
   light: {
-    background: '#F8FAFC',
+    background: '#FAF7F2',
     surface: '#FFFFFF',
-    surfaceSubtle: '#F1F5F9',
-    text: '#0F172A',
-    textSecondary: '#475569',
-    textMuted: '#94A3B8',
-    border: '#E2E8F0',
-    borderFocus: '#6366F1',
-    divider: '#EDF2F7',
+    surfaceSubtle: '#F6F1EC',
+    text: '#302B2D',
+    textSecondary: '#766D70',
+    textMuted: '#8B8184',
+    border: '#E7DED8',
+    borderFocus: '#6D4C5B',
+    divider: '#EEE7E2',
     cardBackground: '#FFFFFF',
-    cardBorder: '#E2E8F0',
-    inputBackground: '#F8FAFC',
-    overlay: 'rgba(15, 23, 42, 0.4)',
-    shadow: '#64748B',
+    cardBorder: '#E7DED8',
+    inputBackground: '#FFFFFF',
+    overlay: 'rgba(48, 43, 45, 0.42)',
+    shadow: '#6D5B62',
   },
   dark: {
-    background: '#0F172A',
-    surface: '#1E293B',
-    surfaceSubtle: '#334155',
-    text: '#F8FAFC',
-    textSecondary: '#CBD5E1',
-    textMuted: '#64748B',
-    border: '#334155',
-    borderFocus: '#818CF8',
-    divider: '#1E293B',
-    cardBackground: '#1E293B',
-    cardBorder: '#334155',
-    inputBackground: '#0F172A',
+    background: '#211C1E',
+    surface: '#30282C',
+    surfaceSubtle: '#3C3236',
+    text: '#FAF7F2',
+    textSecondary: '#D8CED1',
+    textMuted: '#B0A4A7',
+    border: '#52464B',
+    borderFocus: '#D7BFC9',
+    divider: '#463B40',
+    cardBackground: '#30282C',
+    cardBorder: '#52464B',
+    inputBackground: '#292225',
     overlay: 'rgba(0, 0, 0, 0.7)',
     shadow: '#000000',
   },
@@ -120,7 +120,7 @@ export const SENSORY_PALETTES = {
     surfaceSubtle: '#262626',
     text: '#FFFFFF',
     textSecondary: '#FFFF00', // High-visibility contrast Yellow
-    textMuted: '#00FFFF', // Cyan
+    textMuted: '#FFFFFF',
     border: '#FFFFFF',
     borderFocus: '#FFFF00',
     divider: '#FFFFFF',
@@ -133,23 +133,23 @@ export const SENSORY_PALETTES = {
 };
 
 export const STATUS_COLORS = {
-  success: '#10B981',
-  successBackground: '#D1FAE5',
-  warning: '#F59E0B',
-  warningBackground: '#FEF3C7',
-  error: '#EF4444',
-  errorBackground: '#FEE2E2',
-  info: '#3B82F6',
-  infoBackground: '#DBEAFE',
+  success: '#6F9674',
+  successBackground: '#E8F0E7',
+  warning: '#D5A45A',
+  warningBackground: '#FAF0DD',
+  error: '#C76B67',
+  errorBackground: '#F8E8E6',
+  info: '#8FA58A',
+  infoBackground: '#E8EFE6',
 };
 
 // AAC Quick Communication Buttons Colors
 export const AAC_BUTTON_COLORS = {
-  needHelp: '#EF4444', // Red
-  needSpace: '#F59E0B', // Amber
-  cantSpeak: '#8B5CF6', // Purple
-  yes: '#10B981', // Green
-  no: '#F97316', // Orange
+  needHelp: '#A95657',
+  needSpace: '#B56F59',
+  cantSpeak: '#6D4C5B',
+  yes: '#6F9674',
+  no: '#B97862',
 };
 
 export default {

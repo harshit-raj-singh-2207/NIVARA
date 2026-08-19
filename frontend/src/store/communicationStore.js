@@ -57,6 +57,15 @@ export const useCommunicationStore = create((set, get) => ({
 
   setActiveBoardId: (boardId) => set({ activeBoardId: boardId }),
   setActiveEmotion: (emotion) => set({ activeEmotion: emotion }),
+  saveActiveEmotion: async (emotion) => {
+    set({ activeEmotion: emotion, error: null });
+    try {
+      return await communicationApi.updateEmotion(emotion);
+    } catch (err) {
+      set({ error: err.message });
+      throw err;
+    }
+  },
   setSelectedStyle: (style) => set({ selectedStyle: style }),
   setInputText: (text) => set({ inputText: text }),
 
@@ -73,6 +82,7 @@ export const useCommunicationStore = create((set, get) => ({
   },
 
   generateAISentences: async (customPrompt = '') => {
+    if (get().isLoading) return null;
     set({ isLoading: true, error: null });
     try {
       const { activeEmotion, selectedStyle, inputText } = get();
@@ -82,12 +92,13 @@ export const useCommunicationStore = create((set, get) => ({
       set({ suggestions: newSuggestions, isLoading: false });
       return newSuggestions;
     } catch (err) {
-      set({ isLoading: false, error: err.message });
-      return get().suggestions;
+      set({ isLoading: false, error: err.message, suggestions: [] });
+      throw err;
     }
   },
 
   simplifyInputText: async () => {
+    if (get().isLoading) return null;
     set({ isLoading: true, error: null });
     try {
       const { inputText, selectedStyle } = get();
@@ -101,16 +112,19 @@ export const useCommunicationStore = create((set, get) => ({
       return text;
     } catch (err) {
       set({ isLoading: false, error: err.message });
-      return get().inputText;
+      throw err;
     }
   },
 
   sendQuickNeedAlert: async (needTitle) => {
-    try {
-      await communicationApi.sendQuickPanicNeed(needTitle);
-    } catch (err) {
-      console.warn('Quick need dispatch warning:', err);
-    }
+    const alertTypes = {
+      'I Need Help': 'NEED_HELP',
+      'I Need Space': 'NEED_SPACE',
+      "I Can't Speak": 'CANT_SPEAK',
+    };
+    const type = alertTypes[needTitle];
+    if (!type) throw new Error('This quick alert is not supported.');
+    return communicationApi.createAlert(type, needTitle);
   },
 }));
 

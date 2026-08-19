@@ -179,6 +179,9 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
+    borderWidth: 0,
+    outlineStyle: 'none',
+    backgroundColor: 'transparent',
   },
   leftIconWrapper: {
     marginRight: 8,

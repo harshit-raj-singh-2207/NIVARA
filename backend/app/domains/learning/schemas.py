@@ -3,6 +3,7 @@ Learning Domain Pydantic Schemas for NIVARA.
 Validation models for routines, task step breakdowns, step completion updates, and AI tutor explanations.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
@@ -81,3 +82,73 @@ class TutorExplainResponse(BaseModel):
     simplified_explanation: str = Field(..., description="Simplified visual explanation")
     key_takeaways: List[str] = Field(..., description="Bullet points summarizing the topic")
     visual_analogy: str = Field(..., description="Relatable visual metaphor or sensory analogy")
+
+
+class RoutineCreate(BaseModel):
+    title: str = Field(..., min_length=2, max_length=120)
+    time: str = Field(..., min_length=1, max_length=80)
+    icon: str = Field(default="R", max_length=16)
+    tasks: List[TaskItem] = Field(default_factory=list, max_length=50)
+
+
+class RoutineUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=2, max_length=120)
+    time: Optional[str] = Field(default=None, min_length=1, max_length=80)
+    icon: Optional[str] = Field(default=None, max_length=16)
+    active: Optional[bool] = None
+    tasks: Optional[List[TaskItem]] = Field(default=None, max_length=50)
+
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=2, max_length=200)
+    time: Optional[str] = Field(default=None, max_length=80)
+    completed: Optional[bool] = None
+
+
+class LearningTopicResponse(BaseModel):
+    id: str = Field(alias="_id")
+    slug: str
+    title: str
+    category: str
+    description: str = ""
+    difficulty: str = "beginner"
+    source: str = "default"
+    model_config = {"populate_by_name": True}
+
+
+class LearningProgressResponse(BaseModel):
+    total_steps: int
+    completed_steps: int
+    percentage: float
+
+
+class ReminderCreate(BaseModel):
+    title: str = Field(..., min_length=2, max_length=120)
+    description: str = Field(default="", max_length=500)
+    scheduled_at: datetime
+    routine_id: Optional[str] = None
+    task_id: Optional[str] = None
+
+
+class ReminderResponse(ReminderCreate):
+    id: str = Field(alias="_id")
+    status: str
+    created_at: datetime
+    model_config = {"populate_by_name": True}
+
+
+class TutorMessageResponse(BaseModel):
+    role: str
+    content: str
+    created_at: datetime
+
+
+class TutorHistoryResponse(BaseModel):
+    items: List[TutorMessageResponse]
+    total: int
+
+
+class LearningHomeResponse(BaseModel):
+    routines: List[RoutineResponse]
+    progress: LearningProgressResponse
+    reminders: List[ReminderResponse]

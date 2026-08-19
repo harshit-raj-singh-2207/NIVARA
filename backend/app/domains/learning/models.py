@@ -18,6 +18,7 @@ class RoutineStep(BaseModel):
     icon: Optional[str] = Field(default="📌")
     estimated_minutes: Optional[int] = Field(default=5)
     completed: bool = Field(default=False)
+    description: Optional[str] = Field(default=None)
 
 
 class TaskBreakdown(Document):
@@ -32,6 +33,7 @@ class TaskBreakdown(Document):
     steps: List[RoutineStep] = Field(default_factory=list)
     completed: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
         name = CollectionNames.TASK_BREAKDOWNS
@@ -53,6 +55,7 @@ class Routine(Document):
     task_ids: List[str] = Field(default_factory=list, description="IDs of linked TaskBreakdown documents")
     active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
         name = CollectionNames.ROUTINES
@@ -80,3 +83,53 @@ class UserProgress(Document):
             "user_id",
             "date",
         ]
+
+
+class LearningTopic(Document):
+    slug: Indexed(str, unique=True)
+    title: str
+    category: str = "General Knowledge"
+    description: str = ""
+    difficulty: str = "beginner"
+    active: bool = True
+    order: int = 0
+    source: str = "default"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = CollectionNames.LEARNING_TOPICS
+        indexes = ["slug", "category", "active", "order"]
+
+
+class Reminder(Document):
+    user_id: Indexed(str)
+    title: str
+    description: str = ""
+    scheduled_at: datetime
+    status: str = "upcoming"
+    routine_id: Optional[str] = None
+    task_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = CollectionNames.REMINDERS
+        indexes = ["user_id", "scheduled_at", "status"]
+
+
+class TutorMessage(BaseModel):
+    role: str
+    content: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class TutorConversation(Document):
+    user_id: Indexed(str)
+    messages: List[TutorMessage] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = CollectionNames.TUTOR_CONVERSATIONS
+        indexes = ["user_id", "updated_at"]

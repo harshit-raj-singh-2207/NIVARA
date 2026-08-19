@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   card: {
     padding: SPACING.md,
     marginBottom: SPACING.sm,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FAF7F2',
     borderColor: BRAND_COLORS.primaryLight + '30',
   },
   header: {
@@ -70,17 +70,17 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: FONT_SIZES.xs,
     fontWeight: FONT_WEIGHTS.semibold,
-    color: '#64748B',
+    color: '#766D70',
   },
   originalText: {
     fontSize: FONT_SIZES.sm,
-    color: '#334155',
+    color: '#6D4C5B',
     fontStyle: 'italic',
   },
   simplifiedText: {
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.bold,
-    color: '#0F172A',
+    color: '#302B2D',
     marginTop: 2,
   },
   explanationBox: {

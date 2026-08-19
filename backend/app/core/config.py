@@ -5,7 +5,7 @@ and core application metadata.
 """
 
 from functools import lru_cache
-from typing import List, Union
+from typing import List, Optional, Union
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -56,6 +56,12 @@ class Settings(BaseSettings):
         default=100,
         description="Maximum database connection pool size"
     )
+
+    # Optional OpenAI-compatible AI provider. No key is required for non-AI endpoints.
+    AI_API_KEY: Optional[str] = Field(default=None, description="AI provider API key")
+    AI_MODEL: str = Field(default="gpt-4o-mini", description="AI model identifier")
+    AI_BASE_URL: str = Field(default="https://api.openai.com/v1", description="OpenAI-compatible API base URL")
+    AI_TIMEOUT_SECONDS: float = Field(default=20.0, ge=1.0, le=120.0)
 
     # Security & JWT Token Parameters
     SECRET_KEY: str = Field(

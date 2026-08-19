@@ -27,6 +27,7 @@ const getWsUrl = () => {
 export const API_BASE_URL = getBaseUrl();
 export const WS_URL = getWsUrl();
 export const API_TIMEOUT = 15000;
+export const AI_API_TIMEOUT = 45000;
 
 export const ENDPOINTS = {
   // Auth
@@ -49,5 +50,6 @@ export default {
   API_BASE_URL,
   WS_URL,
   API_TIMEOUT,
+  AI_API_TIMEOUT,
   ENDPOINTS,
 };

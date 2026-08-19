@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import secureStorage from '../services/storage/secureStorage';
 import authApi from '../services/api/authApi';
 import { resetAndNavigate } from '../navigation/navigationRef';
+import { registerSessionExpiredHandler } from '../services/auth/sessionEvents';
 
 export const useAuthStore = create((set, get) => ({
   user: null,
@@ -25,16 +26,10 @@ export const useAuthStore = create((set, get) => ({
       const token = await secureStorage.getAccessToken();
       const storedUser = await secureStorage.getUserData();
 
-      if (token) {
-        const userObj = storedUser || {
-          id: 'u_101',
-          full_name: 'Alex Vance',
-          email: 'alex.vance@nivara.app',
-          role: 'PATIENT',
-        };
-
+      if (token && storedUser) {
+        const verifiedUser = await authApi.getCurrentUser();
         set({
-          user: userObj,
+          user: verifiedUser || storedUser,
           isAuthenticated: true,
           isLoading: false,
           isInitialized: true,
@@ -42,6 +37,7 @@ export const useAuthStore = create((set, get) => ({
         });
         return true;
       } else {
+        if (token || storedUser) await secureStorage.clearAll();
         set({
           user: null,
           isAuthenticated: false,
@@ -79,22 +75,7 @@ export const useAuthStore = create((set, get) => ({
           ? credentials
           : { email: credentials, password: passwordStr };
 
-      let response;
-      try {
-        response = await authApi.login(loginPayload);
-      } catch (err) {
-        // Fallback demo user for offline/testing mode
-        response = {
-          access_token: 'mock_access_jwt_token',
-          refresh_token: 'mock_refresh_jwt_token',
-          user: {
-            id: 'u_101',
-            full_name: loginPayload.email.includes('caregiver') ? 'Eleanor Vance' : 'Alex Vance',
-            email: loginPayload.email,
-            role: loginPayload.email.includes('caregiver') ? 'CAREGIVER' : 'PATIENT',
-          },
-        };
-      }
+      const response = await authApi.login(loginPayload);
 
       const { access_token, refresh_token, user } = response;
 
@@ -105,14 +86,12 @@ export const useAuthStore = create((set, get) => ({
         await secureStorage.setRefreshToken(refresh_token);
       }
 
-      const userProfile = user || {
-        id: 'u_101',
-        full_name: 'Alex Vance',
-        email: loginPayload.email,
-        role: 'PATIENT',
-      };
+      if (!access_token || !user) throw new Error('The server returned an incomplete login response.');
+      const userProfile = user;
 
       await secureStorage.setUserData(userProfile);
+      const persistedToken = await secureStorage.getAccessToken();
+      if (persistedToken !== access_token) throw new Error('Your session could not be saved. Please try again.');
 
       set({
         user: userProfile,
@@ -136,27 +115,15 @@ export const useAuthStore = create((set, get) => ({
   register: async (userData) => {
     set({ isLoading: true, error: null });
     try {
-      let response;
-      try {
-        response = await authApi.register(userData);
-      } catch (err) {
-        response = {
-          access_token: 'mock_access_jwt_token',
-          refresh_token: 'mock_refresh_jwt_token',
-          user: {
-            id: `u_${Date.now()}`,
-            full_name: userData.full_name || 'New Member',
-            email: userData.email,
-            role: userData.role || 'PATIENT',
-          },
-        };
-      }
+      const response = await authApi.register(userData);
 
       const { access_token, refresh_token, user } = response;
       if (access_token) await secureStorage.setAccessToken(access_token);
       if (refresh_token) await secureStorage.setRefreshToken(refresh_token);
 
       await secureStorage.setUserData(user);
+      const persistedToken = await secureStorage.getAccessToken();
+      if (persistedToken !== access_token) throw new Error('Your session could not be saved. Please try again.');
 
       set({
         user,
@@ -212,3 +179,13 @@ export const useAuthStore = create((set, get) => ({
 }));
 
 export default useAuthStore;
+
+registerSessionExpiredHandler(() => {
+  useAuthStore.setState({
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    isInitialized: true,
+    error: 'Your session has expired. Please sign in again.',
+  });
+});

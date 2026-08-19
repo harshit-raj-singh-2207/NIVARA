@@ -46,7 +46,7 @@ export const RoutineTimeline = ({ routines = [], activeRoutineId, onSelectRoutin
               </Text>
               <Text
                 style={{
-                  color: isActive ? '#E0E7FF' : colors.textMuted,
+                  color: isActive ? '#F5EFF2' : colors.textMuted,
                   fontSize: 10,
                   marginTop: 2,
                 }}

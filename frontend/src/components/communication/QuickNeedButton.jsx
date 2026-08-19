@@ -12,7 +12,7 @@ export const QuickNeedButton = ({ title, icon, color, onPress, style }) => {
   const { colors, borderRadius, typography, shadows } = theme;
 
   const bg = color || colors.primary;
-
+ 
   return (
     <TouchableOpacity
       activeOpacity={0.8}

@@ -11,6 +11,18 @@ import { Alert } from 'react-native';
 export const parseErrorMessage = (error) => {
   if (!error) return 'An unknown error occurred. Please try again.';
   if (typeof error === 'string') return error;
+  const status = error.response?.status || error.status;
+  const payload = error.response?.data || error;
+  if (status === 401) return 'Your session has expired. Please sign in again.';
+  if (status === 403) return 'You do not have permission to access this information.';
+  if (status === 404) return 'The requested information could not be found.';
+  if (status === 422) return 'Please check the information you entered and try again.';
+  if (payload.code === 'AI_NOT_CONFIGURED') return 'AI features are not configured on this server.';
+  if (payload.code === 'AI_PROVIDER_TIMEOUT') return 'The AI assistant took too long to respond. Please try again.';
+  if (payload.code === 'AI_RATE_LIMITED') return 'The AI assistant is busy. Please try again shortly.';
+  if (String(payload.code || '').startsWith('AI_')) return 'The AI assistant is temporarily unavailable. Please try again later.';
+  if (status >= 500) return 'The service is temporarily unavailable. Please try again.';
+  if (payload.message) return payload.message;
   if (error.error?.message) return error.error.message;
   if (error.message) return error.message;
   if (error.detail) return error.detail;
@@ -24,7 +36,10 @@ export const parseErrorMessage = (error) => {
  * Alias helper for API error parsing.
  */
 export const parseApiError = (error) => {
-  return parseErrorMessage(error);
+  const parsed = new Error(parseErrorMessage(error));
+  parsed.status = error?.response?.status;
+  parsed.code = error?.response?.data?.code;
+  return parsed;
 };
 
 /**

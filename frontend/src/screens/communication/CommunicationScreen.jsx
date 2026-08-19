@@ -41,7 +41,7 @@ export const CommunicationScreen = ({ navigation }) => {
     inputText,
     suggestions,
     isLoading,
-    setActiveEmotion,
+    saveActiveEmotion,
     setSelectedStyle,
     setInputText,
     generateAISentences,
@@ -55,8 +55,8 @@ export const CommunicationScreen = ({ navigation }) => {
     try {
       await sendQuickNeedAlert(needTitle);
       showSuccessAlert(
-        'Quick Alert Dispatched',
-        `Caregiver notified: "${needTitle}" has been sent to your primary emergency contacts.`
+        'Quick Message Saved',
+        `"${needTitle}" was added to your communication history.`
       );
     } catch (err) {
       handleApiError(err, 'Alert Dispatch Failed');
@@ -79,6 +79,10 @@ export const CommunicationScreen = ({ navigation }) => {
   };
 
   const handleGeneratePress = async () => {
+    if (!inputText.trim()) {
+      Alert.alert('Input Empty', 'Please enter or select text before generating suggestions.');
+      return;
+    }
     setAiProcessing(true);
     try {
       await generateAISentences();
@@ -190,7 +194,7 @@ export const CommunicationScreen = ({ navigation }) => {
 
           <EmotionSelector
             selectedEmotion={activeEmotion}
-            onSelectEmotion={(emo) => setActiveEmotion(emo)}
+            onSelectEmotion={(emo) => saveActiveEmotion(emo).catch((err) => handleApiError(err, 'Could not save emotional state'))}
           />
         </AppCard>
 

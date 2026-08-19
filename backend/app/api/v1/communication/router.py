@@ -1,261 +1,196 @@
-"""
-Communication API Router for NIVARA backend.
-Provides endpoints for text simplification, AI sentence generation, idiom explanation, and communication history logs.
-"""
+"""Thin HTTP routes for the authenticated Communication domain."""
 
-import logging
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from bson import ObjectId
+
 from fastapi import APIRouter, Depends, Query, status
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.core.constants import CollectionNames
 from app.core.database import get_database
-from app.core.dependencies import get_current_user
-from app.core.exceptions import DatabaseError, NotFoundException
+from app.core.dependencies import get_current_user, require_admin
+from app.domains.communication import aac_service
+from app.domains.communication.emotion_service import create_emotion_suggestion
+from app.domains.communication.repository import CommunicationRepository
 from app.domains.communication.schemas import (
-    CommunicationHistoryListResponse,
-    CommunicationLogResponse,
-    CommunicationStyle,
-    ExplainMessageRequest,
-    ExplainMessageResponse,
-    GenerateSentenceRequest,
-    GenerateSentenceResponse,
-    SimplifyTextRequest,
-    SimplifyTextResponse,
+    AACCategoryResponse, AACGenerateRequest, AACGenerateResponse, AACPhraseResponse, AACSelectionRequest, AACSelectionResponse, AACSymbolUpdate, AACSymbolWrite,
+    AlertStatus, CommunicationAlertCreate, CommunicationAlertListResponse, CommunicationAlertResponse, CommunicationAlertUpdate,
+    CommunicationPreferencesResponse, CommunicationPreferencesUpdate, EmotionalStateRequest, EmotionalStateResponse,
+    CommunicationHistoryListResponse, CommunicationLogResponse, EmotionRequest, EmotionResponse,
+    ExplainMessageRequest, ExplainMessageResponse, GenerateSentenceRequest, GenerateSentenceResponse,
+    QuickCommunicationResponse, SimplifyTextRequest, SimplifyTextResponse, SpeechTextResponse,
 )
-
-logger = logging.getLogger(__name__)
+from app.domains.communication.service import CommunicationService
+from app.domains.communication.speech_service import prepare_speech_text
+from app.core.exceptions import NotFoundException
 
 router = APIRouter(prefix="/communication", tags=["Communication Hub"])
 
 
-def format_log_doc(doc: Dict[str, Any]) -> CommunicationLogResponse:
-    """Helper to convert MongoDB communication log document into validated response model."""
-    doc["_id"] = str(doc["_id"])
-    return CommunicationLogResponse.model_validate(doc)
+def user_id(user: Dict[str, Any]) -> str:
+    return str(user["_id"])
 
 
-# --- ROUTE ENDPOINTS ---
-
-@router.post(
-    "/simplify",
-    response_model=SimplifyTextResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Simplify complex input text using AI style rules",
-)
-async def simplify_text(
-    payload: SimplifyTextRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_database),
-) -> SimplifyTextResponse:
-    """
-    Simplifies complex or jargon-heavy text into direct, friendly, or formal phrasing tailored for neurodivergent sensory comfort.
-    Saves record in MongoDB communication history.
-    """
-    user_id = str(current_user["_id"])
-    raw_text = payload.text.strip()
-    style_val = payload.style
-
-    # AI simplification logic engine
-    words = raw_text.split()
-    if len(words) > 10:
-        core_phrase = " ".join(words[:10]) + "..."
-    else:
-        core_phrase = raw_text
-
-    if style_val == CommunicationStyle.FRIENDLY:
-        simplified = f"Hi! Just wanted to share: {core_phrase}"
-        explanation = "Reformatted with a warm, casual greeting and friendly tone."
-    elif style_val == CommunicationStyle.FORMAL:
-        simplified = f"Please note: {core_phrase}"
-        explanation = "Structured with polite, formal communication parameters."
-    else:  # SIMPLE
-        simplified = f"Direct point: {core_phrase}"
-        explanation = "Simplified into direct, low-cognitive load phrasing."
-
-    now_iso = datetime.now(timezone.utc).isoformat()
-
-    # Save to MongoDB communication_history
-    log_doc = {
-        "_id": str(ObjectId()),
-        "user_id": user_id,
-        "type": "SIMPLIFY",
-        "input_content": raw_text,
-        "output_content": simplified,
-        "emotion": None,
-        "style": style_val.value,
-        "created_at": now_iso,
-    }
-
-    try:
-        await db[CollectionNames.COMMUNICATION_HISTORY].insert_one(log_doc)
-    except Exception as e:
-        logger.warning(f"Failed to log communication history for user {user_id}: {e}")
-
-    return SimplifyTextResponse(
-        original_text=raw_text,
-        simplified_text=simplified,
-        explanation=explanation,
-        style=style_val,
-    )
+@router.post("/simplify", response_model=SimplifyTextResponse)
+async def simplify(payload: SimplifyTextRequest, user=Depends(get_current_user), db=Depends(get_database)):
+    result = await CommunicationService(db).simplify(user_id(user), payload.text, payload.style.value)
+    return {"original_text": payload.text.strip(), "style": payload.style, **result}
 
 
-@router.post(
-    "/generate-sentence",
-    response_model=GenerateSentenceResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Construct clear sentences based on keywords, emotion state, and AAC symbols",
-)
-@router.post(
-    "/generate",
-    response_model=GenerateSentenceResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Alias for generate-sentence endpoint",
-    include_in_schema=False,
-)
-async def generate_sentence(
-    payload: GenerateSentenceRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_database),
-) -> GenerateSentenceResponse:
-    """
-    Constructs clear, adaptive sentences based on selected AAC symbols, keywords, and emotional mood.
-    """
-    user_id = str(current_user["_id"])
-    emotion = (payload.emotion or "calm").lower()
-    keywords_clean = [k.strip() for k in payload.keywords if k.strip()]
-    prompt = payload.prompt.strip() if payload.prompt else ""
-
-    combined_phrase = ", ".join(keywords_clean) if keywords_clean else prompt or "need assistance"
-
-    # Construct 3 emotion-aware sentence suggestions
-    if emotion == "overwhelmed" or emotion == "anxious":
-        opt1 = f"I am feeling {emotion} right now. I need a quiet space."
-        opt2 = f"Could you please slow down and help me with {combined_phrase}?"
-        opt3 = f"Right now, I am experiencing high sensory input and need support."
-    elif emotion == "frustrated":
-        opt1 = f"I feel frustrated. Please give me a moment."
-        opt2 = f"I am trying to explain {combined_phrase}, but it is difficult."
-        opt3 = f"I need space right now to calm down."
-    else:  # calm / happy / default
-        opt1 = f"I am feeling {emotion} and would like to share: {combined_phrase}."
-        opt2 = f"Could you please help me with {combined_phrase}?"
-        opt3 = f"Thank you. Right now, I need {combined_phrase}."
-
-    suggestions = [opt1, opt2, opt3]
-    now_iso = datetime.now(timezone.utc).isoformat()
-
-    # Save to MongoDB communication_history
-    log_doc = {
-        "_id": str(ObjectId()),
-        "user_id": user_id,
-        "type": "GENERATE",
-        "input_content": combined_phrase,
-        "output_content": opt1,
-        "emotion": emotion,
-        "style": payload.style.value,
-        "created_at": now_iso,
-    }
-
-    try:
-        await db[CollectionNames.COMMUNICATION_HISTORY].insert_one(log_doc)
-    except Exception as e:
-        logger.warning(f"Failed to log communication history for user {user_id}: {e}")
-
-    return GenerateSentenceResponse(
-        emotion=emotion,
-        suggestions=suggestions,
-        style=payload.style,
-    )
+@router.post("/generate-sentence", response_model=GenerateSentenceResponse)
+@router.post("/generate", response_model=GenerateSentenceResponse, include_in_schema=False)
+async def generate(payload: GenerateSentenceRequest, user=Depends(get_current_user), db=Depends(get_database)):
+    text = payload.source_text or "Please help me communicate what I need"
+    emotion = (payload.emotion or "calm").strip().lower()
+    suggestions = await CommunicationService(db).generate(user_id(user), text, payload.style.value, emotion)
+    return {"emotion": emotion, "suggestions": suggestions, "style": payload.style}
 
 
-@router.post(
-    "/explain",
-    response_model=ExplainMessageResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Break down confusing or idiom-heavy messages into plain language",
-)
-async def explain_message(
-    payload: ExplainMessageRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_database),
-) -> ExplainMessageResponse:
-    """
-    Breaks down idiom-heavy, sarcastic, or figurative communication into plain literal language.
-    """
-    user_id = str(current_user["_id"])
-    message_clean = payload.message.strip()
-
-    # AI idiom breakdown rules engine
-    literal_meaning = f"The speaker is directly communicating about: '{message_clean}'."
-    implied_intent = "The person is conveying their current state and inviting a supportive response."
-    suggested_response = f"I understand. Thank you for letting me know about {message_clean}."
-
-    now_iso = datetime.now(timezone.utc).isoformat()
-
-    log_doc = {
-        "_id": str(ObjectId()),
-        "user_id": user_id,
-        "type": "EXPLAIN",
-        "input_content": message_clean,
-        "output_content": literal_meaning,
-        "emotion": None,
-        "created_at": now_iso,
-    }
-
-    try:
-        await db[CollectionNames.COMMUNICATION_HISTORY].insert_one(log_doc)
-    except Exception as e:
-        logger.warning(f"Failed to log communication history for user {user_id}: {e}")
-
-    return ExplainMessageResponse(
-        original_message=message_clean,
-        literal_meaning=literal_meaning,
-        implied_intent=implied_intent,
-        suggested_response=suggested_response,
-    )
+@router.post("/explain", response_model=ExplainMessageResponse)
+async def explain(payload: ExplainMessageRequest, user=Depends(get_current_user), db=Depends(get_database)):
+    result = await CommunicationService(db).explain(user_id(user), payload.message)
+    return {"original_message": payload.message.strip(), **result}
 
 
-@router.get(
-    "/history",
-    response_model=CommunicationHistoryListResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Fetch paginated communication logs and quick needs",
-)
-async def get_communication_history(
-    limit: int = Query(default=20, ge=1, le=100, description="Page size limit"),
-    skip: int = Query(default=0, ge=0, description="Page skip offset"),
-    current_user: Dict[str, Any] = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_database),
-) -> CommunicationHistoryListResponse:
-    """
-    Fetches past communication logs, generated sentences, and quick needs sent by the user.
-    """
-    user_id = str(current_user["_id"])
-    query = {"user_id": user_id}
+@router.post("/emotion", response_model=EmotionResponse)
+async def emotion(payload: EmotionRequest, user=Depends(get_current_user), db=Depends(get_database)):
+    service = CommunicationService(db)
+    await service.repo.save_emotion(user_id(user), payload.emotion.lower())
+    suggestions = await create_emotion_suggestion(service, user_id(user), payload.emotion, payload.context, payload.style.value)
+    return {"emotion": payload.emotion.lower(), "suggestions": suggestions}
 
-    try:
-        total_count = await db[CollectionNames.COMMUNICATION_HISTORY].count_documents(query)
 
-        cursor = (
-            db[CollectionNames.COMMUNICATION_HISTORY]
-            .find(query)
-            .sort("created_at", -1)
-            .skip(skip)
-            .limit(limit)
-        )
-        docs = await cursor.to_list(length=limit)
+@router.get("/emotion", response_model=EmotionalStateResponse)
+async def current_emotion(user=Depends(get_current_user), db=Depends(get_database)):
+    doc = await CommunicationRepository(db).current_emotion(user_id(user))
+    if not doc:
+        return {"emotion": "calm", "updated_at": ""}
+    return {"emotion": doc["emotion"], "updated_at": doc.get("created_at", "")}
 
-        formatted_items = [format_log_doc(doc) for doc in docs]
 
-        return CommunicationHistoryListResponse(
-            items=formatted_items,
-            total=total_count,
-            limit=limit,
-            skip=skip,
-        )
-    except Exception as e:
-        logger.error(f"Error fetching communication history for user {user_id}: {e}")
-        raise DatabaseError(message=f"Failed to fetch communication history: {str(e)}")
+@router.post("/emotion/state", response_model=EmotionalStateResponse)
+async def save_emotional_state(payload: EmotionalStateRequest, user=Depends(get_current_user), db=Depends(get_database)):
+    repo = CommunicationRepository(db)
+    result = await repo.save_emotion(user_id(user), payload.emotion.value)
+    await repo.create_message(user_id(user), "EMOTION", payload.emotion.value, payload.emotion.value, emotion=payload.emotion.value, source="emotion")
+    return result
+
+
+@router.get("/aac/categories", response_model=List[AACCategoryResponse])
+async def aac_categories(_: Dict[str, Any] = Depends(get_current_user)):
+    return aac_service.categories()
+
+
+@router.get("/aac/phrases", response_model=List[AACPhraseResponse])
+async def aac_phrases(category: Optional[str] = Query(default=None), _: Dict[str, Any] = Depends(get_current_user)):
+    return aac_service.phrases(category)
+
+
+@router.get("/aac/symbols", response_model=List[AACPhraseResponse])
+async def aac_symbols(category: Optional[str] = Query(default=None), _: Dict[str, Any] = Depends(get_current_user), db=Depends(get_database)):
+    built_in = aac_service.phrases(category)
+    custom = await CommunicationRepository(db).list_custom_symbols(category)
+    custom_ids = {item["id"] for item in custom}
+    return [item for item in built_in if item["id"] not in custom_ids] + custom
+
+
+@router.post("/aac/symbols", response_model=AACPhraseResponse, status_code=status.HTTP_201_CREATED)
+async def create_aac_symbol(payload: AACSymbolWrite, _: Dict[str, Any] = Depends(require_admin), db=Depends(get_database)):
+    return await CommunicationRepository(db).create_symbol(payload.model_dump())
+
+
+@router.patch("/aac/symbols/{symbol_id}", response_model=AACPhraseResponse)
+async def update_aac_symbol(symbol_id: str, payload: AACSymbolUpdate, _: Dict[str, Any] = Depends(require_admin), db=Depends(get_database)):
+    result = await CommunicationRepository(db).update_symbol(symbol_id, payload.model_dump(exclude_none=True))
+    if not result:
+        raise NotFoundException("AAC symbol", symbol_id)
+    return result
+
+
+@router.delete("/aac/symbols/{symbol_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_aac_symbol(symbol_id: str, _: Dict[str, Any] = Depends(require_admin), db=Depends(get_database)):
+    if not await CommunicationRepository(db).delete_symbol(symbol_id):
+        raise NotFoundException("AAC symbol", symbol_id)
+
+
+@router.post("/aac/selection", response_model=AACSelectionResponse, status_code=status.HTTP_201_CREATED)
+async def select_aac_symbol(payload: AACSelectionRequest, user=Depends(get_current_user), db=Depends(get_database)):
+    matches = [item for item in aac_service.phrases() if item["id"] == payload.symbol_id]
+    if not matches:
+        raise NotFoundException("AAC symbol", payload.symbol_id)
+    repo = CommunicationRepository(db)
+    selected_at = await repo.record_symbol_selection(user_id(user), payload.symbol_id, payload.generated_text)
+    await repo.create_message(user_id(user), "AAC_SELECTION", payload.symbol_id, payload.generated_text or matches[0]["text"], source="aac")
+    return {"symbol": matches[0], "selected_at": selected_at}
+
+
+@router.post("/aac/generate", response_model=AACGenerateResponse)
+async def aac_generate(payload: AACGenerateRequest, user=Depends(get_current_user), db=Depends(get_database)):
+    sentence, selected = aac_service.combine(payload.phrase_ids)
+    repo = CommunicationRepository(db)
+    await repo.create_message(user_id(user), "AAC", ",".join(payload.phrase_ids), sentence, source="aac")
+    for phrase_id in payload.phrase_ids:
+        await repo.record_symbol_selection(user_id(user), phrase_id, sentence)
+    return {"sentence": sentence, "phrases": selected}
+
+
+@router.get("/quick", response_model=QuickCommunicationResponse)
+async def quick(_: Dict[str, Any] = Depends(get_current_user)):
+    return {"phrases": aac_service.quick_phrases()}
+
+
+@router.post("/alerts", response_model=CommunicationAlertResponse, status_code=status.HTTP_201_CREATED)
+async def create_alert(payload: CommunicationAlertCreate, user=Depends(get_current_user), db=Depends(get_database)):
+    repo = CommunicationRepository(db)
+    uid = user_id(user)
+    alert = await repo.create_alert(uid, payload.type.value, payload.message)
+    preferences = await repo.get_preferences(uid) or {}
+    notifications = preferences.get("notification_preferences", {})
+    if notifications.get("caregiver_alerts", True):
+        caregivers = await repo.linked_caregiver_ids(uid)
+        await repo.notify_caregivers(caregivers, alert)
+    await repo.create_message(uid, "QUICK_ALERT", payload.type.value, payload.message or payload.type.value, source="quick_alert")
+    return alert
+
+
+@router.get("/alerts", response_model=CommunicationAlertListResponse)
+async def list_alerts(limit: int = Query(20, ge=1, le=100), skip: int = Query(0, ge=0), alert_status: Optional[AlertStatus] = Query(default=None, alias="status"), user=Depends(get_current_user), db=Depends(get_database)):
+    docs, total = await CommunicationRepository(db).list_alerts(user_id(user), limit, skip, alert_status.value if alert_status else None)
+    return {"items": docs, "total": total, "limit": limit, "skip": skip}
+
+
+@router.patch("/alerts/{alert_id}", response_model=CommunicationAlertResponse)
+async def update_alert(alert_id: str, payload: CommunicationAlertUpdate, user=Depends(get_current_user), db=Depends(get_database)):
+    result = await CommunicationRepository(db).update_alert(user_id(user), alert_id, payload.status.value)
+    if not result:
+        raise NotFoundException("Communication alert", alert_id)
+    return result
+
+
+@router.post("/speech", response_model=SpeechTextResponse)
+async def speech(payload: ExplainMessageRequest, _: Dict[str, Any] = Depends(get_current_user)):
+    return {"text": prepare_speech_text(payload.message)}
+
+
+@router.get("/history", response_model=CommunicationHistoryListResponse)
+async def history(limit: int = Query(20, ge=1, le=100), skip: int = Query(0, ge=0), event_type: Optional[str] = Query(default=None, alias="type", max_length=50), sort: str = Query(default="newest", pattern="^(newest|oldest)$"), user=Depends(get_current_user), db=Depends(get_database)):
+    docs, total = await CommunicationRepository(db).list_history(user_id(user), limit, skip, event_type.upper() if event_type else None, sort == "oldest")
+    items = []
+    for doc in docs:
+        doc["_id"] = str(doc["_id"])
+        items.append(CommunicationLogResponse.model_validate(doc))
+    return {"items": items, "total": total, "limit": limit, "skip": skip}
+
+
+@router.get("/preferences", response_model=CommunicationPreferencesResponse)
+async def get_preferences(user=Depends(get_current_user), db=Depends(get_database)):
+    repo = CommunicationRepository(db)
+    doc = await repo.get_preferences(user_id(user)) or {}
+    doc["frequent_symbol_ids"] = await repo.frequent_symbols(user_id(user))
+    return doc
+
+
+@router.put("/preferences", response_model=CommunicationPreferencesResponse)
+async def put_preferences(payload: CommunicationPreferencesUpdate, user=Depends(get_current_user), db=Depends(get_database)):
+    repo = CommunicationRepository(db)
+    changes = payload.model_dump(exclude_none=True, mode="json")
+    doc = await repo.update_preferences(user_id(user), changes)
+    doc["frequent_symbol_ids"] = await repo.frequent_symbols(user_id(user))
+    return doc

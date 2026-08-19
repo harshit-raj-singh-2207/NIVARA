@@ -33,9 +33,12 @@ async def init_beanie_odm(database: AsyncIOMotorDatabase) -> None:
         from beanie import init_beanie
         from app.domains.users.models import User
         from app.domains.notifications.models import Notification
-        from app.domains.communication.models import AACBoard, CommunicationLog, CustomPhrase
+        from app.domains.communication.models import (
+            AACBoard, AACSymbol, AACSymbolUsage, CommunicationAlert, CommunicationHubPreferences,
+            CommunicationLog, CustomPhrase, EmotionalStateLog,
+        )
         from app.domains.safety.models import LocationLog, SafeZone, SOSAlert, BandDevice
-        from app.domains.learning.models import Routine, TaskBreakdown, UserProgress
+        from app.domains.learning.models import LearningTopic, Reminder, Routine, TaskBreakdown, TutorConversation, UserProgress
         from app.domains.sensory.models import SensoryLog, SensoryPreference
         from app.domains.community.models import CommunityPost, Group, ChatMessage
 
@@ -45,6 +48,11 @@ async def init_beanie_odm(database: AsyncIOMotorDatabase) -> None:
             AACBoard,
             CommunicationLog,
             CustomPhrase,
+            CommunicationAlert,
+            EmotionalStateLog,
+            CommunicationHubPreferences,
+            AACSymbolUsage,
+            AACSymbol,
             LocationLog,
             SafeZone,
             SOSAlert,
@@ -52,6 +60,9 @@ async def init_beanie_odm(database: AsyncIOMotorDatabase) -> None:
             Routine,
             TaskBreakdown,
             UserProgress,
+            LearningTopic,
+            Reminder,
+            TutorConversation,
             SensoryLog,
             SensoryPreference,
             CommunityPost,
@@ -114,6 +125,9 @@ async def init_db(max_retries: int = 3, retry_delay_seconds: float = 2.0) -> Asy
 
             # Register Beanie document models
             await init_beanie_odm(db_manager.db)
+            from app.domains.learning.topic_catalog import ensure_learning_topics
+            inserted_topics = await ensure_learning_topics(db_manager.db)
+            logger.info("Learning topic catalogue ready (%s inserted).", inserted_topics)
             return db_manager.db
 
         except Exception as e:

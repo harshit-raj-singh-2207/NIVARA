@@ -19,9 +19,8 @@ export const secureStorage = {
   },
 
   setAccessToken: async (token) => {
-    try {
-      await AsyncStorage.setItem(TOKEN_KEY, token);
-    } catch (e) {}
+    if (!token) throw new Error('Cannot store an empty access token');
+    await AsyncStorage.setItem(TOKEN_KEY, token);
   },
 
   getRefreshToken: async () => {
@@ -33,9 +32,8 @@ export const secureStorage = {
   },
 
   setRefreshToken: async (token) => {
-    try {
-      await AsyncStorage.setItem(REFRESH_TOKEN_KEY, token);
-    } catch (e) {}
+    if (!token) throw new Error('Cannot store an empty refresh token');
+    await AsyncStorage.setItem(REFRESH_TOKEN_KEY, token);
   },
 
   getUserData: async () => {
@@ -48,15 +46,12 @@ export const secureStorage = {
   },
 
   setUserData: async (user) => {
-    try {
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
-    } catch (e) {}
+    if (!user) throw new Error('Cannot store empty user data');
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
   },
 
   clearAll: async () => {
-    try {
-      await AsyncStorage.multiRemove([TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY]);
-    } catch (e) {}
+    await AsyncStorage.multiRemove([TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY]);
   },
 };
 

@@ -18,6 +18,7 @@ export const useLearningStore = create((set, get) => ({
   },
   isLoading: false,
   error: null,
+  requestInFlight: false,
 
   setActiveRoutineId: (routineId) => set({ activeRoutineId: routineId }),
   dismissReminder: () => set({ activeReminder: null }),
@@ -30,8 +31,8 @@ export const useLearningStore = create((set, get) => ({
     let completedSteps = 0;
 
     routinesList.forEach((routine) => {
-      routine.tasks.forEach((task) => {
-        task.steps.forEach((step) => {
+      (routine.tasks || []).forEach((task) => {
+        (task.steps || []).forEach((step) => {
           totalSteps++;
           if (step.completed) completedSteps++;
         });
@@ -42,18 +43,34 @@ export const useLearningStore = create((set, get) => ({
   },
 
   fetchRoutines: async () => {
-    set({ isLoading: true, error: null });
+    if (get().requestInFlight) return get().routines;
+    set({ isLoading: true, requestInFlight: true, error: null });
     try {
-      const data = await learningApi.getRoutines();
+      const home = await learningApi.getHome();
+      const data = home.routines;
       const progress = get().calculateTaskProgress(data);
-      set({ routines: data, progressPercentage: progress, isLoading: false });
+      set({ routines: data, progressPercentage: progress, activeReminder: home.reminders[0] || null, isLoading: false, requestInFlight: false });
+      return data;
     } catch (err) {
-      set({ isLoading: false, error: err.message });
+      set({ isLoading: false, requestInFlight: false, error: err.message, routines: [] });
+      throw err;
     }
   },
 
+  fetchRoutine: async (routineId) => {
+    const routine = await learningApi.getRoutine(routineId);
+    set((state) => ({ routines: [...state.routines.filter((item) => item.id !== routine.id), routine] }));
+    return routine;
+  },
+
+  fetchTask: async (taskId) => learningApi.getTask(taskId),
+
   toggleStepCompletion: async (taskId, stepId) => {
     const { routines } = get();
+    const task = routines.flatMap((routine) => routine.tasks || []).find((item) => item.id === taskId);
+    const step = task?.steps?.find((item) => item.id === stepId);
+    if (!step) throw new Error('Task step could not be found.');
+    const newCompleted = !step.completed;
 
     const updatedRoutines = routines.map((routine) => ({
       ...routine,
@@ -63,8 +80,6 @@ export const useLearningStore = create((set, get) => ({
           ...task,
           steps: task.steps.map((step) => {
             if (step.id !== stepId) return step;
-            const newCompleted = !step.completed;
-            learningApi.updateStepCompletion(taskId, stepId, newCompleted);
             return { ...step, completed: newCompleted };
           }),
         };
@@ -72,7 +87,13 @@ export const useLearningStore = create((set, get) => ({
     }));
 
     const progress = get().calculateTaskProgress(updatedRoutines);
-    set({ routines: updatedRoutines, progressPercentage: progress });
+    set({ routines: updatedRoutines, progressPercentage: progress, error: null });
+    try {
+      await learningApi.updateStepCompletion(taskId, stepId, newCompleted);
+    } catch (err) {
+      set({ routines, progressPercentage: get().calculateTaskProgress(routines), error: err.message });
+      throw err;
+    }
   },
 }));
 

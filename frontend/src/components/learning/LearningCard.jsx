@@ -62,11 +62,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.bold,
-    color: '#0F172A',
+    color: '#302B2D',
   },
   category: {
     fontSize: FONT_SIZES.xs,
-    color: '#64748B',
+    color: '#766D70',
     marginTop: 2,
   },
   badge: {

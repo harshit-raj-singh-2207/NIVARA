@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AAC_BUTTON_COLORS, BRAND_COLORS } from '../../constants/colors';
+import { AAC_BUTTON_COLORS, BRAND_COLORS, PALETTE } from '../../constants/colors';
 import { SPACING, BORDER_RADIUS } from '../../constants/spacing';
 import { FONT_SIZES, FONT_WEIGHTS } from '../../constants/typography';
 
@@ -14,8 +14,8 @@ export const AACButton = ({ item, onPress, selected = false }) => {
 
   const { label, symbol, category } = item;
 
-  let backgroundColor = '#FFFFFF';
-  let borderColor = '#E2E8F0';
+  let backgroundColor = PALETTE.neutral.surfaceLight;
+  let borderColor = PALETTE.neutral.border;
 
   if (category === 'urgent') {
     backgroundColor = AAC_BUTTON_COLORS.needHelp + '15';
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: '#6D5B62',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: FONT_SIZES.xs,
     fontWeight: FONT_WEIGHTS.bold,
-    color: '#0F172A',
+    color: PALETTE.neutral.textPrimary,
     textAlign: 'center',
   },
 });

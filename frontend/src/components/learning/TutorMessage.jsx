@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   },
   body: {
     fontSize: FONT_SIZES.sm,
-    color: '#0F172A',
+    color: '#302B2D',
     lineHeight: 20,
   },
 });

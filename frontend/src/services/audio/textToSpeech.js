@@ -54,7 +54,7 @@ class TextToSpeechEngine {
    * @param {Object} [customOptions] - Optional pitch, rate, language overrides
    */
   async speak(text, customOptions = {}) {
-    if (!text || typeof text !== 'string') return;
+    if (!text || typeof text !== 'string') throw new Error('Speech text is required');
 
     this.stop(); // Stop any ongoing speech
 
@@ -88,6 +88,7 @@ class TextToSpeechEngine {
         utterance.pitch = options.pitch;
         utterance.rate = options.rate;
         utterance.lang = options.language;
+        utterance.onstart = () => options.onStart();
         utterance.onend = () => options.onDone();
         utterance.onerror = (e) => options.onError(e);
 
@@ -96,6 +97,8 @@ class TextToSpeechEngine {
       } catch (err) {
         console.warn('Web SpeechSynthesis error:', err);
         this.currentlySpeaking = false;
+        options.onError(err);
+        throw err;
       }
     } else if (this.speechEngine && this.speechEngine.speak) {
       try {
@@ -104,6 +107,8 @@ class TextToSpeechEngine {
       } catch (err) {
         console.warn('Expo Speech error:', err);
         this.currentlySpeaking = false;
+        options.onError(err);
+        throw err;
       }
     } else {
       console.log(`🔊 [Simulated TTS Output]: "${text}" (Pitch: ${options.pitch}, Rate: ${options.rate})`);

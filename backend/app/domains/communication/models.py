@@ -49,7 +49,11 @@ class CommunicationLog(Document):
     simplified_text: Optional[str] = Field(default=None, description="AI simplified text version")
     input_type: str = Field(default="symbol", description="Input mode: symbol, text, voice")
     emotion_context: Optional[str] = Field(default="calm", description="Active user emotion state")
+    generated_text: Optional[str] = Field(default=None)
+    communication_style: str = Field(default="simple")
+    source: str = Field(default="text")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
         name = CollectionNames.COMMUNICATION_LOGS
@@ -75,3 +79,65 @@ class CustomPhrase(Document):
             "user_id",
             "category",
         ]
+
+
+class CommunicationAlert(Document):
+    user_id: Indexed(str)
+    type: str
+    message: Optional[str] = None
+    status: str = "active"
+    caregivers_notified: int = 0
+    created_at: str
+    updated_at: str
+
+    class Settings:
+        name = CollectionNames.COMMUNICATION_ALERTS
+        indexes = ["user_id", "status", "created_at"]
+
+
+class EmotionalStateLog(Document):
+    user_id: Indexed(str)
+    emotion: str
+    created_at: str
+
+    class Settings:
+        name = CollectionNames.EMOTIONAL_STATES
+        indexes = ["user_id", "created_at"]
+
+
+class CommunicationHubPreferences(Document):
+    user_id: Indexed(str, unique=True)
+    default_emotion: str = "calm"
+    preferred_tone: str = "simple"
+    history_enabled: bool = True
+    notification_preferences: dict = Field(default_factory=lambda: {"caregiver_alerts": True, "emergency_alerts": True})
+    updated_at: Optional[str] = None
+
+    class Settings:
+        name = CollectionNames.COMMUNICATION_PREFERENCES
+        indexes = ["user_id"]
+
+
+class AACSymbolUsage(Document):
+    user_id: Indexed(str)
+    symbol_id: str
+    generated_text: Optional[str] = None
+    created_at: str
+
+    class Settings:
+        name = CollectionNames.AAC_SYMBOL_USAGE
+        indexes = ["user_id", "symbol_id", "created_at"]
+
+
+class AACSymbol(Document):
+    id: Indexed(str, unique=True)
+    category: str
+    label: str
+    text: str
+    icon: Optional[str] = None
+    order: int = 0
+    active: bool = True
+
+    class Settings:
+        name = CollectionNames.AAC_SYMBOLS
+        indexes = ["id", "category", "active"]

@@ -1,10 +1,59 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import FeatureScreen, { SectionTitle } from '../../components/common/FeatureScreen';
 import AppButton from '../../components/common/AppButton';
-import AppCard from '../../components/common/AppCard';
+import EmptyState from '../../components/common/EmptyState';
+import Loading from '../../components/common/Loading';
 import SpeechButton from '../../components/communication/SpeechButton';
+import communicationApi from '../../services/api/communicationApi';
 import { useTheme } from '../../theme';
-const CATEGORIES = { Needs: [['Water','Drink'],['Food','I am hungry'],['Bathroom','I need the bathroom'],['Help','I need help']], Feelings: [['Happy','I feel happy'],['Sad','I feel sad'],['Worried','I feel worried'],['Calm','I feel calm']], People: [['Family','my family'],['Friend','my friend'],['Teacher','my teacher']], Activities: [['Rest','I want to rest'],['Learn','I want to learn'],['Go','I want to go']], Emergency: [['Help now','I need help now'],['Call caregiver','Please call my caregiver']] };
-export default function AACScreen({ navigation }) { const { theme } = useTheme(); const [category,setCategory]=useState('Needs'); const [parts,setParts]=useState([]); const sentence=parts.join(' '); return <FeatureScreen navigation={navigation} title="AAC communication" subtitle="Tap large buttons to build a message"><SectionTitle>Choose a category</SectionTitle><View style={styles.wrap}>{Object.keys(CATEGORIES).map(x=><TouchableOpacity accessibilityRole="button" key={x} onPress={()=>setCategory(x)} style={[styles.category,{backgroundColor:category===x?theme.colors.primary:theme.colors.surface,borderColor:theme.colors.border}]}><Text style={{color:category===x?'#fff':theme.colors.text}}>{x}</Text></TouchableOpacity>)}</View><SectionTitle>Your message</SectionTitle><AppCard><Text accessibilityLiveRegion="polite" style={[styles.sentence,{color:theme.colors.text}]}>{sentence || 'Your selected words will appear here.'}</Text><View style={styles.actions}><AppButton title="Clear" variant="outline" fullWidth={false} disabled={!sentence} onPress={()=>setParts([])} /><SpeechButton text={sentence} size="large" /></View></AppCard><SectionTitle>{category}</SectionTitle><View style={styles.grid}>{CATEGORIES[category].map(([label,text])=><TouchableOpacity accessibilityRole="button" accessibilityHint={`Add ${text} to message`} key={label} onPress={()=>setParts(p=>[...p,text])} style={[styles.tile,{backgroundColor:theme.colors.surface,borderColor:theme.colors.primary,borderRadius:theme.borderRadius.lg}]}><Text style={styles.symbol}>{label.slice(0,1)}</Text><Text style={[styles.tileText,{color:theme.colors.text}]}>{label}</Text></TouchableOpacity>)}</View></FeatureScreen>; }
-const styles=StyleSheet.create({wrap:{flexDirection:'row',flexWrap:'wrap',gap:8},category:{minHeight:48,paddingHorizontal:14,borderWidth:1,justifyContent:'center',borderRadius:12},sentence:{fontSize:20,lineHeight:28,minHeight:56},actions:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:12},grid:{flexDirection:'row',flexWrap:'wrap',gap:12},tile:{width:'47%',minHeight:112,borderWidth:2,alignItems:'center',justifyContent:'center',padding:12},symbol:{fontSize:30,fontWeight:'bold'},tileText:{fontSize:17,fontWeight:'600',marginTop:8,textAlign:'center'}});
+
+export default function AACScreen({ navigation }) {
+  const { theme } = useTheme();
+  const [categories, setCategories] = useState([]);
+  const [categoryId, setCategoryId] = useState('');
+  const [selected, setSelected] = useState([]);
+  const [sentence, setSentence] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [building, setBuilding] = useState(false);
+  const [error, setError] = useState('');
+  const { colors, borderRadius, typography } = theme;
+
+  const load = async () => {
+    setLoading(true); setError('');
+    try { const data = await communicationApi.getAACCategories(); setCategories(data); setCategoryId((current) => current || data[0]?.id || ''); }
+    catch (err) { setError(err.message || 'Could not load AAC phrases.'); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { load(); }, []);
+
+  const choosePhrase = async (phrase) => {
+    if (building) return;
+    const next = [...selected, phrase];
+    setSelected(next);
+    setSentence(next.map((item) => item.text).join(' '));
+    setBuilding(true); setError('');
+    try { const result = await communicationApi.generateAACSentence(next.map((item) => item.id)); setSentence(result.sentence); }
+    catch (err) { setSelected(selected); setSentence(selected.map((item) => item.text).join(' ')); setError(err.message || 'Could not build the message.'); }
+    finally { setBuilding(false); }
+  };
+
+  const clear = () => { setSelected([]); setSentence(''); setError(''); };
+  const category = categories.find((item) => item.id === categoryId);
+  return <FeatureScreen navigation={navigation} title="What do you want to say?" subtitle="Build a message with large, easy-to-reach words.">
+    <View style={[styles.messagePanel, { backgroundColor: colors.primary, borderRadius: borderRadius.xl }]}>
+      <Text style={[styles.eyebrow, { color: colors.primaryLight }]}>YOUR MESSAGE</Text>
+      <Text accessibilityLiveRegion="polite" style={styles.sentence}>{sentence || 'Tap a word below to begin.'}</Text>
+      <View style={styles.actions}><SpeechButton text={sentence} size="large" /><AppButton title="Clear" variant="secondary" fullWidth={false} disabled={!sentence || building} onPress={clear} /></View>
+    </View>
+    {error ? <Text accessibilityRole="alert" style={{ color: colors.status.error, marginTop: 12 }}>{error}</Text> : null}
+    {loading ? <Loading message="Loading AAC phrases..." /> : categories.length === 0 ? <EmptyState title="No AAC phrases available" description="Try again to load your communication choices." actionTitle="Retry" onActionPress={load} /> : <>
+      <SectionTitle>Choose a category</SectionTitle>
+      <View style={styles.categories}>{categories.map((item) => { const active = categoryId === item.id; return <TouchableOpacity accessibilityRole="tab" accessibilityState={{ selected: active }} key={item.id} onPress={() => setCategoryId(item.id)} style={[styles.category, { backgroundColor: active ? colors.primaryLight : colors.surface, borderColor: active ? colors.primary : colors.border, borderRadius: borderRadius.md }]}><Text style={{ color: colors.text, fontWeight: active ? typography.weights.bold : typography.weights.medium }}>{item.label}</Text></TouchableOpacity>; })}</View>
+      <SectionTitle>{category?.label || ''}</SectionTitle>
+      {category?.phrases?.length ? <View style={styles.grid}>{category.phrases.map((phrase) => <TouchableOpacity disabled={building} accessibilityRole="button" accessibilityHint={`Add ${phrase.text} to message`} key={phrase.id} onPress={() => choosePhrase(phrase)} style={[styles.tile, { backgroundColor: colors.surface, borderColor: categoryId === 'emergency' ? colors.status.error : colors.border, borderRadius: borderRadius.lg, opacity: building ? 0.7 : 1 }]}><View style={[styles.letter, { backgroundColor: categoryId === 'emergency' ? colors.status.errorBackground : colors.surfaceSubtle }]}><Text style={[styles.letterText, { color: categoryId === 'emergency' ? colors.status.error : colors.primary }]}>{phrase.icon || phrase.label.slice(0, 1)}</Text></View><Text style={[styles.tileText, { color: colors.text }]}>{phrase.label}</Text></TouchableOpacity>)}</View> : <EmptyState title="No phrases in this category" description="Choose another category." />}
+    </>}
+  </FeatureScreen>;
+}
+
+const styles = StyleSheet.create({ messagePanel:{padding:24,minHeight:190,justifyContent:'space-between'},eyebrow:{fontSize:12,fontWeight:'800',letterSpacing:1.2},sentence:{color:'#FFFFFF',fontSize:26,lineHeight:36,fontWeight:'700',marginVertical:16},actions:{flexDirection:'row',gap:10,alignItems:'center'},categories:{flexDirection:'row',flexWrap:'wrap',gap:8},category:{minHeight:48,paddingHorizontal:16,borderWidth:1,justifyContent:'center'},grid:{flexDirection:'row',flexWrap:'wrap',gap:12},tile:{flexGrow:1,flexBasis:145,minHeight:132,borderWidth:1,alignItems:'center',justifyContent:'center',padding:16},letter:{width:48,height:48,borderRadius:15,alignItems:'center',justifyContent:'center'},letterText:{fontSize:24,fontWeight:'800'},tileText:{fontSize:18,lineHeight:24,fontWeight:'700',marginTop:12,textAlign:'center'} });

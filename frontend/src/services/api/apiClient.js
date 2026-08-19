@@ -8,6 +8,7 @@ import { API_BASE_URL, API_TIMEOUT, ENDPOINTS } from '../../constants/api';
 import secureStorage from '../storage/secureStorage';
 import { resetAndNavigate } from '../../navigation/navigationRef';
 import { parseApiError } from '../../utils/errorHandler';
+import { notifySessionExpired } from '../auth/sessionEvents';
 
 // Base Axios instance configuration
 export const apiClient = axios.create({
@@ -31,6 +32,17 @@ const processQueue = (error, token = null) => {
     }
   });
   failedQueue = [];
+};
+
+const isPublicAuthRequest = (url = '') =>
+  url.includes(ENDPOINTS.LOGIN) ||
+  url.includes(ENDPOINTS.REGISTER) ||
+  url.includes(ENDPOINTS.REFRESH_TOKEN);
+
+const isAuthenticationFailure = (error) => {
+  const status = error.response?.status;
+  const message = String(error.response?.data?.message || error.response?.data?.detail || '').toLowerCase();
+  return status === 401 || (status === 403 && message.includes('not authenticated'));
 };
 
 // Request Interceptor: Retrieve JWT accessToken from secureStorage and inject into Authorization header
@@ -61,11 +73,10 @@ apiClient.interceptors.response.use(
     }
 
     // Handle 401 Unauthorized token expiration
-    if (error.response.status === 401 && originalRequest && !originalRequest._retry) {
+    if (isAuthenticationFailure(error) && originalRequest && !originalRequest._retry) {
       // Don't loop on auth endpoints
       if (
-        originalRequest.url.includes(ENDPOINTS.LOGIN) ||
-        originalRequest.url.includes(ENDPOINTS.REFRESH_TOKEN)
+        isPublicAuthRequest(originalRequest.url)
       ) {
         return Promise.reject(parseApiError(error));
       }
@@ -118,6 +129,7 @@ apiClient.interceptors.response.use(
 
         // Clear secure storage and reset navigation to LoginScreen
         await secureStorage.clearAll();
+        notifySessionExpired();
         resetAndNavigate('LoginScreen');
 
         return Promise.reject(parseApiError(refreshErr));
