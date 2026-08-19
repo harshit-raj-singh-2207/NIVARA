@@ -30,21 +30,10 @@ export const useAuthStore = create((set, get) => ({
           isRestoringSession: false,
         });
       } else {
-        // Fallback demo initial user if no session stored
         set({
-          user: {
-            id: 'usr_001',
-            name: 'Aarav Sharma',
-            email: 'aarav@example.com',
-            role: 'INDIVIDUAL',
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-            sensoryProfile: 'HYPERSENSITIVE',
-            caregiverName: 'Priya Sharma',
-            caregiverEmail: 'priya.caregiver@example.com',
-            caregiverStatus: 'VERIFIED',
-          },
-          token: 'demo_jwt_token_12345',
-          isAuthenticated: true,
+          user: null,
+          token: null,
+          isAuthenticated: false,
           isOnboarded,
           isRestoringSession: false,
         });
@@ -64,12 +53,14 @@ export const useAuthStore = create((set, get) => ({
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      // Perform API call or fallback simulation if backend offline
       let resultData;
       try {
         resultData = await authApi.login({ email, password });
       } catch (e) {
-        // Simulation for UI demonstration / offline mode
+        if (e.response) {
+          throw e;
+        }
+        // Fallback simulation for offline testing
         await new Promise((res) => setTimeout(res, 800));
         const isCaregiver = email.toLowerCase().includes('caregiver');
         resultData = {
@@ -102,7 +93,7 @@ export const useAuthStore = create((set, get) => ({
       });
       return { success: true };
     } catch (err) {
-      const errMsg = err?.response?.data?.message || err.message || 'Invalid email or password.';
+      const errMsg = err?.response?.data?.error?.message || err?.response?.data?.detail || err.message || 'Invalid email or password.';
       set({ error: errMsg, isLoading: false });
       return { success: false, error: errMsg };
     }
@@ -113,8 +104,18 @@ export const useAuthStore = create((set, get) => ({
     try {
       let resultData;
       try {
-        resultData = await authApi.register(userData);
+        const payload = {
+          full_name: userData.name,
+          email: userData.email,
+          password: userData.password,
+          role: userData.role || 'INDIVIDUAL',
+        };
+        resultData = await authApi.register(payload);
       } catch (e) {
+        if (e.response) {
+          throw e;
+        }
+        // Fallback simulation for offline testing
         await new Promise((res) => setTimeout(res, 800));
         resultData = {
           token: `jwt_token_new_${Date.now()}`,
@@ -142,7 +143,7 @@ export const useAuthStore = create((set, get) => ({
       });
       return { success: true };
     } catch (err) {
-      const errMsg = err?.response?.data?.message || err.message || 'Registration failed.';
+      const errMsg = err?.response?.data?.error?.message || err?.response?.data?.detail || err.message || 'Registration failed.';
       set({ error: errMsg, isLoading: false });
       return { success: false, error: errMsg };
     }
@@ -151,15 +152,39 @@ export const useAuthStore = create((set, get) => ({
   verifyCaregiver: async (code, contactInfo) => {
     set({ isLoading: true, error: null });
     try {
-      await new Promise((res) => setTimeout(res, 1000));
-      if (code !== '123456' && code !== '654321') {
-        throw new Error('Invalid verification code. Use demo code: 123456');
+      let resultData;
+      try {
+        const payload = {
+          verification_type: "PAIRING_CODE",
+          emergency_contact_number: contactInfo,
+          linking_code: code,
+          caregiver_code: code,
+        };
+        resultData = await authApi.verifyCaregiver(payload);
+      } catch (e) {
+        if (e.response) {
+          throw e;
+        }
+        // Fallback simulation for offline testing
+        await new Promise((res) => setTimeout(res, 1000));
+        if (code !== '123456' && code !== '654321') {
+          throw new Error('Invalid verification code. Use demo code: 123456');
+        }
+        resultData = {
+          success: true,
+          user: {
+            ...get().user,
+            caregiverStatus: 'VERIFIED',
+            caregiverEmail: contactInfo || 'priya.caregiver@example.com',
+            caregiverName: 'Priya Sharma',
+          }
+        };
       }
 
-      const updatedUser = {
+      const updatedUser = resultData.user || {
         ...get().user,
         caregiverStatus: 'VERIFIED',
-        caregiverEmail: contactInfo || 'priya.caregiver@example.com',
+        caregiverEmail: contactInfo,
         caregiverName: 'Priya Sharma',
       };
 
@@ -167,32 +192,55 @@ export const useAuthStore = create((set, get) => ({
       set({ user: updatedUser, isLoading: false });
       return { success: true };
     } catch (err) {
-      set({ error: err.message, isLoading: false });
-      return { success: false, error: err.message };
+      const errMsg = err?.response?.data?.error?.message || err?.response?.data?.detail || err.message || 'Verification failed.';
+      set({ error: errMsg, isLoading: false });
+      return { success: false, error: errMsg };
     }
   },
 
   forgotPassword: async (email) => {
     set({ isLoading: true, error: null });
     try {
-      await new Promise((res) => setTimeout(res, 800));
+      let resultData;
+      try {
+        resultData = await authApi.forgotPassword(email);
+      } catch (e) {
+        if (e.response) {
+          throw e;
+        }
+        // Fallback simulation
+        await new Promise((res) => setTimeout(res, 800));
+        resultData = { success: true, message: 'Password reset code sent to your email.' };
+      }
       set({ isLoading: false });
-      return { success: true, message: 'Password reset code sent to your email.' };
+      return { success: true, message: resultData.message || 'Password reset code sent to your email.' };
     } catch (err) {
-      set({ error: err.message, isLoading: false });
-      return { success: false, error: err.message };
+      const errMsg = err?.response?.data?.error?.message || err?.response?.data?.detail || err.message || 'Failed to send reset code.';
+      set({ error: errMsg, isLoading: false });
+      return { success: false, error: errMsg };
     }
   },
 
-  resetPassword: async (code, newPassword) => {
+  resetPassword: async (email, code, newPassword) => {
     set({ isLoading: true, error: null });
     try {
-      await new Promise((res) => setTimeout(res, 800));
+      let resultData;
+      try {
+        resultData = await authApi.resetPassword({ email, code, new_password: newPassword });
+      } catch (e) {
+        if (e.response) {
+          throw e;
+        }
+        // Fallback simulation
+        await new Promise((res) => setTimeout(res, 800));
+        resultData = { success: true, message: 'Password has been reset successfully.' };
+      }
       set({ isLoading: false });
-      return { success: true, message: 'Password has been reset successfully.' };
+      return { success: true, message: resultData.message || 'Password has been reset successfully.' };
     } catch (err) {
-      set({ error: err.message, isLoading: false });
-      return { success: false, error: err.message };
+      const errMsg = err?.response?.data?.error?.message || err?.response?.data?.detail || err.message || 'Failed to reset password.';
+      set({ error: errMsg, isLoading: false });
+      return { success: false, error: errMsg };
     }
   },
 

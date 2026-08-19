@@ -8,6 +8,7 @@ import useAuthStore from '../../store/authStore';
 import { isValidPassword, isValidVerificationCode } from '../../utils/validation';
 
 export const ResetPasswordScreen = ({ navigation, route }) => {
+  const email = route?.params?.email || '';
   const [code, setCode] = useState('123456');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,7 +35,7 @@ export const ResetPasswordScreen = ({ navigation, route }) => {
     }
 
     setErrors({});
-    const res = await resetPassword(code, newPassword);
+    const res = await resetPassword(email, code, newPassword);
     if (res.success) {
       setSuccess(true);
       setTimeout(() => {

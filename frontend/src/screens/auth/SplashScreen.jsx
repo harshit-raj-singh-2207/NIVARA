@@ -5,28 +5,27 @@ import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
 import useAuthStore from '../../store/authStore';
 
 export const SplashScreen = ({ navigation }) => {
-  const { restoreSession, isAuthenticated, isOnboarded, isRestoringSession } = useAuthStore();
+  const { isAuthenticated, isOnboarded } = useAuthStore();
 
   useEffect(() => {
     let isMounted = true;
-    const initializeApp = async () => {
-      await restoreSession();
-      // Brief branding display timer
-      setTimeout(() => {
-        if (!isMounted) return;
-        if (isAuthenticated) {
-          // Parent stack listener handles redirect or navigation can replace
-        } else if (!isOnboarded) {
-          navigation.replace('Onboarding');
-        } else {
-          navigation.replace('Login');
-        }
-      }, 1500);
-    };
+    
+    const timer = setTimeout(() => {
+      if (!isMounted) return;
+      if (isAuthenticated) {
+        // Parent stack listener handles redirect or navigation can replace
+      } else if (!isOnboarded) {
+        navigation.replace('Onboarding');
+      } else {
+        navigation.replace('Login');
+      }
+    }, 1500);
 
-    initializeApp();
-    return () => { isMounted = false; };
-  }, []);
+    return () => { 
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [isAuthenticated, isOnboarded]);
 
   return (
     <SafeAreaWrapper className="bg-[#5B8DEF] items-center justify-center">
