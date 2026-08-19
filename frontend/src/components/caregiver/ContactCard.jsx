@@ -1,49 +1,100 @@
-/**
- * ContactCard.jsx
- * Caregiver contact card component displaying emergency contact details and quick call action.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { lightTheme } from '../../theme';
 import AppCard from '../common/AppCard';
-import { BRAND_COLORS, STATUS_COLORS } from '../../constants/colors';
-import { SPACING, BORDER_RADIUS } from '../../constants/spacing';
-import { FONT_SIZES, FONT_WEIGHTS } from '../../constants/typography';
+import Avatar from '../common/Avatar';
 
-export const ContactCard = ({ contact, onCall, onEdit }) => {
+/**
+ * Reusable Contact Card component.
+ * Displays an emergency contact's details with quick actions to call or message them.
+ * Optional delete button if in "edit mode".
+ *
+ * @param {Object} props
+ * @param {import('../../types/safety').EmergencyContact} props.contact 
+ * @param {Function} [props.onDelete] - Action to delete the contact (shows trash icon if provided)
+ */
+const ContactCard = ({ contact, onDelete }) => {
   if (!contact) return null;
 
-  const { name, phone, relationship, isPrimary } = contact;
-
+  // Handle Quick Actions
   const handleCall = () => {
-    if (onCall) {
-      onCall(contact);
-    } else if (phone) {
-      Linking.openURL(`tel:${phone}`);
+    if (contact.phone) {
+      Linking.openURL(`tel:${contact.phone}`).catch(err => {
+        console.warn('Cannot open phone dialer', err);
+      });
+    }
+  };
+
+  const handleMessage = () => {
+    if (contact.phone) {
+      Linking.openURL(`sms:${contact.phone}`).catch(err => {
+        console.warn('Cannot open messaging app', err);
+      });
     }
   };
 
   return (
-    <AppCard style={styles.card}>
-      <View style={styles.row}>
-        <View style={styles.avatarContainer}>
-          <Text style={styles.avatarText}>{name ? name.charAt(0).toUpperCase() : '👤'}</Text>
-        </View>
-        <View style={styles.infoContainer}>
-          <View style={styles.headerRow}>
-            <Text style={styles.name}>{name}</Text>
-            {isPrimary && (
-              <View style={styles.primaryBadge}>
-                <Text style={styles.primaryBadgeText}>Primary</Text>
-              </View>
-            )}
+    <AppCard style={styles.card} noPadding>
+      <View style={styles.container}>
+        
+        {/* Left: Avatar & Info */}
+        <View style={styles.infoSection}>
+          <Avatar 
+            name={contact.name} 
+            size={48} 
+            style={styles.avatar} 
+          />
+          <View style={styles.textContainer}>
+            <Text style={styles.nameText} numberOfLines={1}>{contact.name}</Text>
+            
+            <View style={styles.detailsRow}>
+              {contact.relationship && (
+                <Text style={styles.relationshipText}>
+                  {contact.relationship}
+                </Text>
+              )}
+              {contact.relationship && contact.phone && (
+                <Text style={styles.dotSeparator}> • </Text>
+              )}
+              {contact.phone && (
+                <Text style={styles.phoneText}>
+                  {contact.phone}
+                </Text>
+              )}
+            </View>
           </View>
-          <Text style={styles.relationship}>{relationship || 'Emergency Contact'}</Text>
-          <Text style={styles.phone}>{phone}</Text>
         </View>
-        <TouchableOpacity style={styles.callButton} onPress={handleCall} activeOpacity={0.8}>
-          <Text style={styles.callIcon}>📞</Text>
-        </TouchableOpacity>
+
+        {/* Right: Quick Actions */}
+        <View style={styles.actionsSection}>
+          {/* Action: Call */}
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.callButton]} 
+            onPress={handleCall}
+          >
+            <Ionicons name="call" size={20} color={lightTheme.colors.primary} />
+          </TouchableOpacity>
+          
+          {/* Action: Message */}
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.messageButton]} 
+            onPress={handleMessage}
+          >
+            <Ionicons name="chatbubble" size={20} color={lightTheme.colors.primary} />
+          </TouchableOpacity>
+
+          {/* Action: Delete (optional edit mode) */}
+          {onDelete && (
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.deleteButton]} 
+              onPress={() => onDelete(contact.id)}
+            >
+              <Ionicons name="trash-outline" size={20} color={lightTheme.colors.status.emergency} />
+            </TouchableOpacity>
+          )}
+        </View>
+        
       </View>
     </AppCard>
   );
@@ -51,73 +102,71 @@ export const ContactCard = ({ contact, onCall, onEdit }) => {
 
 const styles = StyleSheet.create({
   card: {
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
+    marginBottom: lightTheme.spacing.md,
   },
-  row: {
+  container: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: lightTheme.spacing.md,
   },
-  avatarContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: BRAND_COLORS.primaryLight + '20',
+  infoSection: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.md,
-  },
-  avatarText: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: BRAND_COLORS.primary,
-  },
-  infoContainer: {
     flex: 1,
   },
-  headerRow: {
+  avatar: {
+    marginRight: lightTheme.spacing.md,
+  },
+  textContainer: {
+    flex: 1,
+    paddingRight: lightTheme.spacing.sm,
+  },
+  nameText: {
+    ...lightTheme.typography.body1,
+    fontWeight: '700',
+    color: lightTheme.colors.text.primary,
+    marginBottom: 4,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  relationshipText: {
+    ...lightTheme.typography.caption,
+    color: lightTheme.colors.primary,
+    fontWeight: '500',
+  },
+  dotSeparator: {
+    ...lightTheme.typography.caption,
+    color: lightTheme.colors.text.tertiary,
+  },
+  phoneText: {
+    ...lightTheme.typography.caption,
+    color: lightTheme.colors.text.secondary,
+  },
+  actionsSection: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  name: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: '#0F172A',
-    marginRight: SPACING.xs,
-  },
-  primaryBadge: {
-    backgroundColor: STATUS_COLORS.warningBackground,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: BORDER_RADIUS.xs,
-  },
-  primaryBadgeText: {
-    fontSize: 10,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: STATUS_COLORS.warning,
-  },
-  relationship: {
-    fontSize: FONT_SIZES.sm,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  phone: {
-    fontSize: FONT_SIZES.xs,
-    color: BRAND_COLORS.primary,
-    marginTop: 2,
-    fontWeight: FONT_WEIGHTS.medium,
-  },
-  callButton: {
+  actionButton: {
     width: 40,
     height: 40,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: STATUS_COLORS.successBackground,
-    alignItems: 'center',
+    borderRadius: 20,
     justifyContent: 'center',
-    marginLeft: SPACING.xs,
+    alignItems: 'center',
+    backgroundColor: lightTheme.colors.primaryLight,
+    marginLeft: lightTheme.spacing.xs,
   },
-  callIcon: {
-    fontSize: 18,
+  callButton: {
+    // Uses default primaryLight bg
+  },
+  messageButton: {
+    backgroundColor: lightTheme.colors.surfaceHover,
+  },
+  deleteButton: {
+    backgroundColor: lightTheme.colors.status.emergencyBg,
   },
 });
 

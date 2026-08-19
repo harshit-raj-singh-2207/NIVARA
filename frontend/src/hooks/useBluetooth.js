@@ -1,73 +1,108 @@
+import { useState, useCallback, useEffect } from 'react';
+import { useSafetyStore } from '../store/safetyStore';
+import { bluetoothService } from '../services/bluetooth/bluetoothService';
+import { bandConnection } from '../services/bluetooth/bandConnection';
+
 /**
- * Custom React Hook: useBluetooth
- * Manages BLE Smart Band device scanning, RSSI signal drops, connection state, battery level, and separation alerts.
+ * Custom React hook for UI components to interact with the GPS Band.
+ * Bridges the gap between the complex connection logic and React state for rendering.
  */
-
-import { useEffect, useState, useCallback } from 'react';
-import useSafetyStore from '../store/safetyStore';
-import bandConnection from '../services/bluetooth/bandConnection';
-import bluetoothService from '../services/bluetooth/bluetoothService';
-
 export const useBluetooth = () => {
-  const { bandState, fetchSafetyOverview } = useSafetyStore();
   const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState(null);
   const [discoveredDevices, setDiscoveredDevices] = useState([]);
-  const [error, setError] = useState(null);
+
+  // Pull global band status from Zustand
+  const { bandStatus } = useSafetyStore();
 
   /**
-   * Starts scanning for nearby BLE Smart Band devices.
+   * Starts a BLE scan to find nearby devices to pair with.
+   * Updates the `discoveredDevices` state array for rendering in a list.
    */
   const startScan = useCallback(async () => {
     setIsScanning(true);
-    setError(null);
+    setScanError(null);
+    setDiscoveredDevices([]);
+
     try {
-      if (bluetoothService && bluetoothService.startScan) {
-        await bluetoothService.startScan((device) => {
+      await bluetoothService.startScan(
+        // On device found
+        (device) => {
           setDiscoveredDevices((prev) => {
-            if (prev.some((d) => d.id === device.id)) return prev;
+            // Prevent duplicates
+            if (prev.find((d) => d.id === device.id)) return prev;
             return [...prev, device];
           });
-        });
-      } else {
-        // Fallback demo device
-        setDiscoveredDevices([
-          { id: 'band_402', name: 'NIVARA Smart Band #402', rssi: -65, battery: 88 },
-        ]);
-      }
+        },
+        // On Error
+        (error) => {
+          setScanError(error.message);
+          setIsScanning(false);
+        }
+      );
+
+      // Auto-stop scanning flag after config timeout
+      // Note: bluetoothService already stops the actual radio scan internally
+      setTimeout(() => setIsScanning(false), 10000); 
+
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setTimeout(() => setIsScanning(false), 5000);
+      setScanError(err.message);
+      setIsScanning(false);
     }
   }, []);
 
   /**
-   * Pairs with a targeted BLE device.
+   * Stops the active scan manually.
    */
-  const connectToDevice = useCallback(async (deviceId) => {
-    try {
-      if (bandConnection && bandConnection.connectBand) {
-        await bandConnection.connectBand(deviceId);
-      }
-      await fetchSafetyOverview();
-    } catch (err) {
-      setError(err.message);
-    }
-  }, [fetchSafetyOverview]);
+  const stopScan = useCallback(() => {
+    bluetoothService.stopScan();
+    setIsScanning(false);
+  }, []);
 
+  /**
+   * Connects to a specific band from the discovered list.
+   * @param {string} deviceId 
+   */
+  const connectToBand = useCallback(async (deviceId) => {
+    stopScan();
+    setScanError(null);
+    try {
+      // Calls our orchestrator, which handles the complex retry/SOS logic
+      await bandConnection.startConnection(deviceId);
+    } catch (err) {
+      setScanError('Failed to connect to the band.');
+    }
+  }, [stopScan]);
+
+  /**
+   * Disconnects from the currently connected band.
+   */
+  const disconnectBand = useCallback(async () => {
+    if (bandStatus.deviceId) {
+      await bandConnection.stopConnection(bandStatus.deviceId);
+    }
+  }, [bandStatus.deviceId]);
+
+  // Clean up scans if the component unmounts mid-scan
   useEffect(() => {
-    // Monitor band connection status on mount
-    fetchSafetyOverview();
-  }, [fetchSafetyOverview]);
+    return () => {
+      if (isScanning) {
+        bluetoothService.stopScan();
+      }
+    };
+  }, [isScanning]);
 
   return {
-    bandState,
+    // Current State
+    bandStatus,
     isScanning,
+    scanError,
     discoveredDevices,
-    error,
+    
+    // Actions
     startScan,
-    connectToDevice,
+    stopScan,
+    connectToBand,
+    disconnectBand
   };
 };
-
-export default useBluetooth;

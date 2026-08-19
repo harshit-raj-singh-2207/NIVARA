@@ -1,92 +1,47 @@
-/**
- * ChildStatusCard.jsx
- * Dependent child status profile header card component for caregiver monitoring.
- */
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
-import Avatar from '../common/Avatar';
+import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
-export const ChildStatusCard = ({ dependent, onPress }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
-  if (!dependent) return null;
-
-  const isOnline = dependent.isOnline ?? true;
-
+const ChildStatusCard = ({ childName, status, lastUpdate }) => {
+  const { colors } = useTheme();
+  
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={onPress}
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: colors.border,
-          borderRadius: borderRadius.lg,
-          padding: 12,
-          marginBottom: 12,
-          ...shadows.small,
-        },
-      ]}
-    >
-      <View style={styles.row}>
-        <Avatar name={dependent.name} size="medium" />
-
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <View style={styles.titleRow}>
-            <Text
-              style={{
-                color: colors.text,
-                fontSize: typography.sizes.md,
-                fontWeight: typography.weights.bold,
-              }}
-            >
-              {dependent.name}
-            </Text>
-            <View
-              style={[
-                styles.statusDot,
-                {
-                  backgroundColor: isOnline ? colors.status.success : colors.textMuted,
-                  borderRadius: borderRadius.full,
-                },
-              ]}
-            />
-          </View>
-
-          <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs, marginTop: 2 }}>
-            Role: Dependent User • Age: {dependent.age || '12'}
-          </Text>
-
-          <Text style={{ color: colors.primary, fontSize: 11, fontWeight: 'bold', marginTop: 4 }}>
-            State: {dependent.emotionalState || 'Calm'} • Noise: {dependent.noiseDb || '72'} dB
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={styles.header}>
+        <Ionicons name="person-circle" size={48} color={colors.primary} />
+        <View style={styles.textBlock}>
+          <Text style={[styles.name, { color: colors.text }]}>{childName || "Dependent Profile"}</Text>
+          <Text style={[styles.update, { color: colors.text }]}>Last seen: {lastUpdate || "Just now"}</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: status === 'safe' ? '#dcfce7' : '#fee2e2' }]}>
+          <Text style={[styles.statusText, { color: status === 'safe' ? '#166534' : '#991b1b' }]}>
+            {status === 'safe' ? 'SAFE' : 'ALERT'}
           </Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
+  card: { 
+    padding: 20, 
+    borderRadius: 24, 
+    borderWidth: 1, 
+    marginBottom: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  statusDot: {
-    width: 10,
-    height: 10,
-  },
+  header: { flexDirection: 'row', alignItems: 'center' },
+  textBlock: { flex: 1, marginLeft: 16 },
+  name: { fontSize: 20, fontWeight: '800' },
+  update: { fontSize: 13, opacity: 0.6, marginTop: 4, fontWeight: '500' },
+  statusBadge: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  statusText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5 }
 });
 
 export default ChildStatusCard;

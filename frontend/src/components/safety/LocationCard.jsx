@@ -1,82 +1,60 @@
-/**
- * LocationCard.jsx
- * Displays live GPS address, coordinates, and safe zone status.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, StyleSheet } from 'react-native';
+import AppCard from '../common/AppCard';
+import { lightTheme } from '../../theme/lightTheme';
 
-export const LocationCard = ({ location }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
-  const address = location?.address || '124 Sensory Safe Haven, Innovation Hub, Tech City';
-  const isInside = location?.isInsideSafeZone ?? true;
-
+const LocationCard = ({ address, isTracking }) => {
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surface,
-          borderColor: isInside ? colors.status.success : colors.status.warning,
-          borderRadius: borderRadius.lg,
-          padding: 12,
-          marginBottom: 12,
-          ...shadows.small,
-        },
-      ]}
-    >
-      <View style={styles.headerRow}>
-        <Text style={{ fontSize: 24, marginRight: 8 }}>📍</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.text, fontSize: typography.sizes.sm, fontWeight: 'bold' }}>
-            Current Live Location
-          </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs, marginTop: 2 }}>
-            {address}
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.badge,
-            {
-              backgroundColor: isInside ? colors.status.successBackground : colors.status.warningBackground,
-              borderColor: isInside ? colors.status.success : colors.status.warning,
-              borderRadius: borderRadius.sm,
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-            },
-          ]}
-        >
-          <Text
-            style={{
-              color: isInside ? colors.status.success : colors.status.warning,
-              fontSize: 10,
-              fontWeight: 'bold',
-            }}
-          >
-            {isInside ? 'INSIDE SAFE ZONE' : 'OUTSIDE ZONE'}
-          </Text>
-        </View>
+    <AppCard>
+      <View style={styles.header}>
+        <Text style={styles.title}>Current Location</Text>
+        {isTracking && <Text style={styles.badge}>Live tracking on</Text>}
       </View>
-    </View>
+      <View style={styles.mapPlaceholder}>
+        <Text style={styles.mapText}>Map View Placeholder</Text>
+      </View>
+      <Text style={styles.address}>{address}</Text>
+    </AppCard>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1.5,
-  },
-  headerRow: {
+  header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: lightTheme.spacing.md,
+  },
+  title: {
+    fontSize: lightTheme.typography.size.md,
+    color: lightTheme.colors.text.primary,
+    fontWeight: lightTheme.typography.weight.semiBold,
   },
   badge: {
-    borderWidth: 1,
+    fontSize: lightTheme.typography.size.xs,
+    color: lightTheme.colors.status.safe,
+    backgroundColor: lightTheme.colors.status.safeBg,
+    paddingHorizontal: lightTheme.spacing.sm,
+    paddingVertical: lightTheme.spacing.xs,
+    borderRadius: lightTheme.borderRadius.round,
+    overflow: 'hidden',
   },
+  mapPlaceholder: {
+    height: 150,
+    backgroundColor: lightTheme.colors.background,
+    borderRadius: lightTheme.borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: lightTheme.spacing.md,
+  },
+  mapText: {
+    color: lightTheme.colors.text.secondary,
+    fontWeight: lightTheme.typography.weight.medium,
+  },
+  address: {
+    fontSize: lightTheme.typography.size.sm,
+    color: lightTheme.colors.text.secondary,
+  }
 });
 
 export default LocationCard;

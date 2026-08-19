@@ -1,91 +1,58 @@
-/**
- * Accessible Reusable Empty State View for NIVARA.
- * Displays soothing icon/illustration placeholder, heading title, message, and call-to-action button.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { lightTheme } from '../../theme';
 import AppButton from './AppButton';
 
-export const EmptyState = ({
-  icon = '📭',
-  title = 'No items found',
-  description = 'There is no data to display right now.',
-  actionTitle,
-  onActionPress,
+/**
+ * Reusable Empty State component.
+ * Displayed when lists have zero items (e.g., no Emergency Contacts, no Safe Zones).
+ *
+ * @param {Object} props
+ * @param {string} props.icon - Ionicons icon name
+ * @param {string} props.title - Primary large text
+ * @param {string} props.message - Secondary descriptive text
+ * @param {string} [props.buttonText] - Optional CTA button label
+ * @param {Function} [props.onButtonPress] - Optional CTA action
+ * @param {boolean} [props.compact=false] - If true, reduces padding (good for use inside cards)
+ */
+const EmptyState = ({
+  icon,
+  title,
+  message,
+  buttonText,
+  onButtonPress,
+  compact = false,
   style,
-  accessibilityLabel,
 }) => {
-  const { theme } = useTheme();
-  const { colors, spacing, typography } = theme;
-
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          padding: spacing.xl,
-        },
-        style,
-      ]}
-      accessible={true}
-      accessibilityRole="summary"
-      accessibilityLabel={accessibilityLabel || `${title}. ${description}`}
-    >
-      {icon && (
-        <View
-          style={[
-            styles.iconWrapper,
-            {
-              backgroundColor: colors.surfaceSubtle,
-              borderRadius: theme.borderRadius.full,
-              padding: spacing.lg,
-              marginBottom: spacing.md,
-            },
-          ]}
-        >
-          <Text style={styles.iconText}>{icon}</Text>
-        </View>
-      )}
+    <View style={[styles.container, compact && styles.compactContainer, style]}>
+      {/* Icon Circle */}
+      <View style={[styles.iconWrapper, compact && styles.compactIconWrapper]}>
+        <Ionicons 
+          name={icon} 
+          size={compact ? 32 : 48} 
+          color={lightTheme.colors.primary} 
+        />
+      </View>
 
-      <Text
-        style={[
-          styles.title,
-          {
-            color: colors.text,
-            fontSize: typography.sizes.lg,
-            fontWeight: typography.weights.bold,
-            marginBottom: spacing.xs,
-          },
-        ]}
-      >
+      {/* Text Content */}
+      <Text style={[styles.title, compact && styles.compactTitle]}>
         {title}
       </Text>
+      <Text style={[styles.message, compact && styles.compactMessage]}>
+        {message}
+      </Text>
 
-      {description && (
-        <Text
-          style={[
-            styles.description,
-            {
-              color: colors.textSecondary,
-              fontSize: typography.sizes.sm,
-              marginBottom: spacing.lg,
-            },
-          ]}
-        >
-          {description}
-        </Text>
-      )}
-
-      {actionTitle && onActionPress && (
-        <AppButton
-          title={actionTitle}
-          onPress={onActionPress}
-          variant="primary"
-          size="medium"
-          fullWidth={false}
-        />
+      {/* Optional Call to Action */}
+      {buttonText && onButtonPress && (
+        <View style={styles.buttonContainer}>
+          <AppButton 
+            title={buttonText} 
+            onPress={onButtonPress} 
+            variant="outline"
+          />
+        </View>
       )}
     </View>
   );
@@ -93,24 +60,55 @@ export const EmptyState = ({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
-    width: '100%',
-    marginVertical: 20,
+    alignItems: 'center',
+    padding: lightTheme.spacing.xl,
+    backgroundColor: lightTheme.colors.background,
+  },
+  compactContainer: {
+    padding: lightTheme.spacing.lg,
+    backgroundColor: 'transparent',
   },
   iconWrapper: {
-    alignItems: 'center',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: lightTheme.colors.primaryLight,
     justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: lightTheme.spacing.lg,
   },
-  iconText: {
-    fontSize: 40,
+  compactIconWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginBottom: lightTheme.spacing.md,
   },
   title: {
+    ...lightTheme.typography.h3,
+    color: lightTheme.colors.text.primary,
     textAlign: 'center',
+    marginBottom: lightTheme.spacing.sm,
   },
-  description: {
+  compactTitle: {
+    ...lightTheme.typography.body1,
+    fontWeight: '700',
+  },
+  message: {
+    ...lightTheme.typography.body1,
+    color: lightTheme.colors.text.secondary,
     textAlign: 'center',
-    maxWidth: 300,
+    paddingHorizontal: lightTheme.spacing.lg,
+  },
+  compactMessage: {
+    ...lightTheme.typography.body2,
+    paddingHorizontal: 0,
+  },
+  buttonContainer: {
+    marginTop: lightTheme.spacing.xl,
+    width: '100%',
+    maxWidth: 250, // Keep button from stretching too wide on empty screens
   },
 });
 

@@ -1,196 +1,140 @@
-/**
- * Accessible Reusable Button Component for NIVARA.
- * Supports theme variants, tactile press animation, loading state, and screen reader accessibility.
- */
-
 import React from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useTheme } from '../../theme';
+import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { lightTheme } from '../../theme';
 
-export const AppButton = ({
+/**
+ * Reusable App Button.
+ * Extensively supports variants, loading states, icons, and disabled modes.
+ *
+ * @param {Object} props
+ * @param {string} props.title - Text label for the button
+ * @param {Function} props.onPress - Action to fire
+ * @param {string} [props.variant='primary'] - 'primary', 'secondary', 'outline', 'danger', or 'ghost'
+ * @param {boolean} [props.isLoading=false] - If true, shows spinner and disables button
+ * @param {boolean} [props.disabled=false] - Disables interaction and drops opacity
+ * @param {string} [props.leftIcon] - Ionicons name to render on left
+ * @param {string} [props.rightIcon] - Ionicons name to render on right
+ * @param {Object} [props.style] - Override container styles
+ */
+const AppButton = ({
   title,
   onPress,
   variant = 'primary',
-  size = 'medium',
+  isLoading = false,
   disabled = false,
-  loading = false,
-  leftIcon = null,
-  rightIcon = null,
-  fullWidth = true,
+  leftIcon,
+  rightIcon,
   style,
   textStyle,
-  accessibilityLabel,
-  accessibilityHint,
-  ...props
 }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, spacing, typography } = theme;
+  // Determine styling based on variant
+  let bgColor = lightTheme.colors.primary;
+  let fgColor = '#ffffff';
+  let borderColor = 'transparent';
+  let borderWidth = 0;
 
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'secondary':
-        return {
-          container: {
-            backgroundColor: colors.surfaceSubtle,
-            borderWidth: 1,
-            borderColor: colors.border,
-          },
-          text: { color: colors.text },
-        };
-      case 'outline':
-        return {
-          container: {
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            borderColor: colors.primary,
-          },
-          text: { color: colors.primary },
-        };
-      case 'ghost':
-        return {
-          container: {
-            backgroundColor: 'transparent',
-            borderWidth: 0,
-          },
-          text: { color: colors.primary },
-        };
-      case 'danger':
-        return {
-          container: {
-            backgroundColor: colors.status.error,
-          },
-          text: { color: '#FFFFFF' },
-        };
-      case 'highContrast':
-        return {
-          container: {
-            backgroundColor: '#FFFF00',
-            borderWidth: 2,
-            borderColor: '#000000',
-          },
-          text: { color: '#000000', fontWeight: '800' },
-        };
-      case 'primary':
-      default:
-        return {
-          container: {
-            backgroundColor: colors.primary,
-          },
-          text: { color: '#FFFFFF' },
-        };
-    }
-  };
+  switch (variant) {
+    case 'secondary':
+      bgColor = lightTheme.colors.surfaceHover;
+      fgColor = lightTheme.colors.text.primary;
+      break;
+    case 'outline':
+      bgColor = 'transparent';
+      fgColor = lightTheme.colors.primary;
+      borderColor = lightTheme.colors.primary;
+      borderWidth = 1.5;
+      break;
+    case 'danger':
+      bgColor = lightTheme.colors.status.emergency;
+      fgColor = '#ffffff';
+      break;
+    case 'ghost':
+      bgColor = 'transparent';
+      fgColor = lightTheme.colors.text.secondary;
+      break;
+    case 'primary':
+    default:
+      bgColor = lightTheme.colors.primary;
+      fgColor = '#ffffff';
+      break;
+  }
 
-  const getSizeStyles = () => {
-    switch (size) {
-      case 'small':
-        return {
-          paddingVertical: spacing.xs + 2,
-          paddingHorizontal: spacing.md,
-          fontSize: typography.sizes.sm,
-        };
-      case 'large':
-        return {
-          paddingVertical: spacing.md,
-          paddingHorizontal: spacing.xl,
-          fontSize: typography.sizes.lg,
-        };
-      case 'medium':
-      default:
-        return {
-          paddingVertical: spacing.sm + 4,
-          paddingHorizontal: spacing.lg,
-          fontSize: typography.sizes.md,
-        };
-    }
-  };
+  // Handle Disabled / Loading look
+  const isEffectivelyDisabled = disabled || isLoading;
+  const opacity = isEffectivelyDisabled ? 0.5 : 1;
 
-  const variantStyle = getVariantStyles();
-  const sizeStyle = getSizeStyles();
+  const containerStyle = [
+    styles.container,
+    {
+      backgroundColor: bgColor,
+      borderColor,
+      borderWidth,
+      opacity,
+    },
+    style,
+  ];
 
   return (
     <TouchableOpacity
-      activeOpacity={0.7}
+      style={containerStyle}
       onPress={onPress}
-      disabled={disabled || loading}
-      accessible={true}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
-      accessibilityLabel={accessibilityLabel || title}
-      accessibilityHint={accessibilityHint}
-      style={[
-        styles.button,
-        variantStyle.container,
-        {
-          borderRadius: borderRadius.md,
-          paddingVertical: sizeStyle.paddingVertical,
-          paddingHorizontal: sizeStyle.paddingHorizontal,
-          width: fullWidth ? '100%' : 'auto',
-          opacity: disabled ? 0.5 : 1,
-        },
-        style,
-      ]}
-      {...props}
+      disabled={isEffectivelyDisabled}
+      activeOpacity={0.8}
     >
-      <View style={styles.contentContainer}>
-        {loading ? (
-          <ActivityIndicator
-            size="small"
-            color={variantStyle.text.color}
-            style={styles.spinner}
-          />
-        ) : (
-          <>
-            {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
-            <Text
-              style={[
-                styles.text,
-                {
-                  fontSize: sizeStyle.fontSize,
-                  fontWeight: typography.weights.bold,
-                  color: variantStyle.text.color,
-                },
-                textStyle,
-              ]}
-            >
-              {title}
-            </Text>
-            {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
-          </>
-        )}
-      </View>
+      {isLoading ? (
+        <ActivityIndicator color={fgColor} size="small" />
+      ) : (
+        <View style={styles.contentRow}>
+          {leftIcon && (
+            <Ionicons
+              name={leftIcon}
+              size={20}
+              color={fgColor}
+              style={styles.leftIcon}
+            />
+          )}
+          <Text style={[styles.title, { color: fgColor }, textStyle]}>
+            {title}
+          </Text>
+          {rightIcon && (
+            <Ionicons
+              name={rightIcon}
+              size={20}
+              color={fgColor}
+              style={styles.rightIcon}
+            />
+          )}
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  button: {
+  container: {
+    height: 52,
+    borderRadius: lightTheme.borderRadius.round,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: lightTheme.spacing.xl,
+    width: '100%',
+  },
+  contentRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
   },
-  contentContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  title: {
+    ...lightTheme.typography.body1,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  text: {
-    textAlign: 'center',
+  leftIcon: {
+    marginRight: lightTheme.spacing.sm,
   },
-  iconLeft: {
-    marginRight: 8,
-  },
-  iconRight: {
-    marginLeft: 8,
-  },
-  spinner: {
-    paddingVertical: 2,
+  rightIcon: {
+    marginLeft: lightTheme.spacing.sm,
   },
 });
 

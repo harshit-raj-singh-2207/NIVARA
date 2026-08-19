@@ -1,116 +1,62 @@
-/**
- * EmergencyContactCard.jsx
- * Caregiver emergency contact card component with quick call & message actions.
- */
-
 import React from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@react-navigation/native';
 
-export const EmergencyContactCard = ({ contact, onCall, onMessage }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
-  if (!contact) return null;
-
+const EmergencyContactCard = ({ contact }) => {
+  const { colors } = useTheme();
+  
   const handleCall = () => {
-    if (onCall) {
-      onCall(contact);
-    } else {
-      Alert.alert('📞 Calling Caregiver', `Dialing ${contact.name} (${contact.phone || 'Emergency Contact'})`);
+    if (contact?.phone) {
+      Linking.openURL(`tel:${contact.phone}`);
     }
   };
 
-  const handleMessage = () => {
-    if (onMessage) {
-      onMessage(contact);
-    } else {
-      Alert.alert('💬 Messaging Caregiver', `Sending SMS alert to ${contact.name}`);
-    }
-  };
+  const name = contact?.name || "Emergency Contact";
+  const relation = contact?.relation || "Caregiver";
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: colors.border,
-          borderRadius: borderRadius.lg,
-          padding: 10,
-          marginBottom: 8,
-          ...shadows.small,
-        },
-      ]}
-    >
-      <View style={styles.leftRow}>
-        <View
-          style={[
-            styles.avatar,
-            {
-              backgroundColor: colors.primaryLight,
-              borderRadius: borderRadius.full,
-            },
-          ]}
-        >
-          <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: 'bold' }}>
-            {contact.name ? contact.name.charAt(0).toUpperCase() : 'C'}
-          </Text>
-        </View>
-
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text
-            style={{
-              color: colors.text,
-              fontSize: typography.sizes.xs,
-              fontWeight: typography.weights.bold,
-            }}
-          >
-            {contact.name} {contact.isPrimary ? '⭐ (Primary)' : ''}
-          </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2 }}>
-            {contact.relationship || 'Caregiver'} • {contact.phone || 'Primary Phone'}
-          </Text>
-        </View>
-
-        <View style={styles.actionRow}>
-          <TouchableOpacity onPress={handleCall} style={[styles.actionBtn, { backgroundColor: colors.status.success }]}>
-            <Text style={{ fontSize: 14 }}>📞</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleMessage} style={[styles.actionBtn, { backgroundColor: colors.primary, marginLeft: 6 }]}>
-            <Text style={{ fontSize: 14 }}>💬</Text>
-          </TouchableOpacity>
-        </View>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={styles.infoBlock}>
+        <Text style={[styles.name, { color: colors.text }]}>{name}</Text>
+        <Text style={[styles.relation, { color: colors.text }]}>{relation}</Text>
       </View>
+      <TouchableOpacity onPress={handleCall} style={[styles.callBtn, { backgroundColor: '#ef4444' }]} activeOpacity={0.8}>
+        <Ionicons name="call" size={20} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
+  card: { 
+    flexDirection: 'row', 
+    padding: 16, 
+    borderRadius: 16, 
+    borderWidth: 1, 
+    alignItems: 'center', 
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
   },
-  leftRow: {
-    flexDirection: 'row',
+  infoBlock: { flex: 1 },
+  name: { fontSize: 18, fontWeight: '700' },
+  relation: { fontSize: 14, opacity: 0.6, marginTop: 4, fontWeight: '500' },
+  callBtn: { 
+    width: 48, 
+    height: 48, 
+    borderRadius: 24, 
+    justifyContent: 'center', 
     alignItems: 'center',
-  },
-  avatar: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  actionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    elevation: 4,
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  }
 });
 
 export default EmergencyContactCard;

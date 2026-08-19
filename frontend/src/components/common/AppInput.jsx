@@ -1,184 +1,148 @@
-/**
- * Accessible Reusable Input Component for NIVARA.
- * Features focus state highlights, error validation messages, sensory font scaling, and accessibility attributes.
- */
-
 import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { lightTheme } from '../../theme';
 
-export const AppInput = ({
+/**
+ * Reusable textured text input component.
+ * 
+ * @param {Object} props 
+ * @param {string} [props.label] - Top label for the input
+ * @param {string} [props.error] - Error message string (turns borders red when present)
+ * @param {string} [props.icon] - Ionicons name to show on the left
+ * @param {boolean} [props.secureTextEntry=false] - For passwords
+ * @param {boolean} [props.multiline=false] - For text areas
+ * @param {import('react-native').TextInputProps} props - All standard TextInput props
+ */
+const AppInput = ({
   label,
-  value,
-  onChangeText,
-  placeholder,
   error,
-  hint,
-  leftIcon,
-  rightIcon,
+  icon,
   secureTextEntry = false,
-  disabled = false,
   multiline = false,
-  numberOfLines = 1,
-  keyboardType = 'default',
-  autoCapitalize = 'none',
   style,
-  inputStyle,
-  accessibilityLabel,
-  accessibilityHint,
   ...props
 }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, spacing, typography } = theme;
   const [isFocused, setIsFocused] = useState(false);
-  const [isPasswordVisible, setIsPasswordVisible] = useState(!secureTextEntry);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-  const togglePasswordVisibility = () => {
-    setIsPasswordVisible((prev) => !prev);
-  };
-
-  const getBorderColor = () => {
-    if (error) return colors.status.error;
-    if (isFocused) return colors.borderFocus;
-    return colors.border;
-  };
+  // Dynamic styling based on state
+  const isError = !!error;
+  const borderColor = isError 
+    ? lightTheme.colors.status.emergency 
+    : isFocused 
+      ? lightTheme.colors.primary 
+      : lightTheme.colors.border;
 
   return (
-    <View style={[styles.container, { marginBottom: spacing.md }, style]}>
+    <View style={[styles.container, style]}>
+      {/* Label */}
       {label && (
-        <Text
-          style={[
-            styles.label,
-            {
-              fontSize: typography.sizes.sm,
-              fontWeight: typography.weights.semibold,
-              color: colors.text,
-              marginBottom: spacing.xs,
-            },
-          ]}
-        >
+        <Text style={[styles.label, isError && styles.labelError]}>
           {label}
         </Text>
       )}
 
-      <View
+      {/* Input Container */}
+      <View 
         style={[
-          styles.inputWrapper,
-          {
-            backgroundColor: colors.inputBackground,
-            borderColor: getBorderColor(),
-            borderWidth: isFocused || error ? 2 : 1,
-            borderRadius: borderRadius.md,
-            paddingHorizontal: spacing.md,
-            opacity: disabled ? 0.6 : 1,
-          },
-          multiline && { minHeight: 44 * Math.max(1, numberOfLines) },
+          styles.inputContainer, 
+          { borderColor },
+          multiline && styles.multilineContainer
         ]}
       >
-        {leftIcon && <View style={styles.leftIconWrapper}>{leftIcon}</View>}
+        {/* Left Icon (Optional) */}
+        {icon && (
+          <Ionicons 
+            name={icon} 
+            size={20} 
+            color={isFocused ? lightTheme.colors.primary : lightTheme.colors.text.secondary} 
+            style={styles.leftIcon}
+          />
+        )}
 
+        {/* Core Input */}
         <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
-          editable={!disabled}
-          multiline={multiline}
-          numberOfLines={numberOfLines}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          secureTextEntry={secureTextEntry && !isPasswordVisible}
+          style={[
+            styles.input,
+            multiline && styles.multilineInput,
+            icon && styles.inputWithLeftIcon
+          ]}
+          placeholderTextColor={lightTheme.colors.text.secondary}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          accessible={true}
-          accessibilityLabel={accessibilityLabel || label || placeholder}
-          accessibilityHint={accessibilityHint || hint}
-          accessibilityInvalid={!!error}
-          style={[
-            styles.textInput,
-            {
-              color: colors.text,
-              fontSize: typography.sizes.md,
-              paddingVertical: spacing.sm + 2,
-            },
-            inputStyle,
-          ]}
+          secureTextEntry={secureTextEntry && !isPasswordVisible}
+          multiline={multiline}
+          textAlignVertical={multiline ? 'top' : 'center'}
           {...props}
         />
 
-        {secureTextEntry ? (
-          <TouchableOpacity
-            onPress={togglePasswordVisibility}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={isPasswordVisible ? 'Hide password' : 'Show password'}
-            style={styles.rightIconWrapper}
+        {/* Right Icon for Passwords */}
+        {secureTextEntry && (
+          <TouchableOpacity 
+            onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+            style={styles.eyeIcon}
           >
-            <Text
-              style={{
-                fontSize: typography.sizes.xs,
-                color: colors.primary,
-                fontWeight: typography.weights.semibold,
-              }}
-            >
-              {isPasswordVisible ? 'HIDE' : 'SHOW'}
-            </Text>
+            <Ionicons 
+              name={isPasswordVisible ? 'eye-off' : 'eye'} 
+              size={20} 
+              color={lightTheme.colors.text.secondary} 
+            />
           </TouchableOpacity>
-        ) : (
-          rightIcon && <View style={styles.rightIconWrapper}>{rightIcon}</View>
         )}
       </View>
 
-      {error ? (
-        <Text
-          style={[
-            styles.errorText,
-            {
-              color: colors.status.error,
-              fontSize: typography.sizes.xs,
-              marginTop: spacing.xs,
-            },
-          ]}
-        >
+      {/* Error Message */}
+      {isError && (
+        <Text style={styles.errorText}>
           {error}
         </Text>
-      ) : hint ? (
-        <Text
-          style={[
-            styles.hintText,
-            {
-              color: colors.textMuted,
-              fontSize: typography.sizes.xs,
-              marginTop: spacing.xs,
-            },
-          ]}
-        >
-          {hint}
-        </Text>
-      ) : null}
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    marginBottom: lightTheme.spacing.md,
   },
   label: {
-    textAlign: 'left',
+    ...lightTheme.typography.body2,
+    color: lightTheme.colors.text.primary,
+    marginBottom: lightTheme.spacing.xs,
+    fontWeight: '500',
   },
-  inputWrapper: {
+  labelError: {
+    color: lightTheme.colors.status.emergency,
+  },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: lightTheme.colors.surface,
+    borderWidth: 1.5,
+    borderRadius: lightTheme.borderRadius.md,
+    minHeight: 52,
   },
-  textInput: {
+  multilineContainer: {
+    minHeight: 120,
+    alignItems: 'flex-start',
+    paddingVertical: lightTheme.spacing.sm,
+  },
+  leftIcon: {
+    paddingLeft: lightTheme.spacing.md,
+  },
+  input: {
     flex: 1,
+    ...lightTheme.typography.body1,
+    color: lightTheme.colors.text.primary,
+    paddingHorizontal: lightTheme.spacing.md,
+    height: '100%',
+  },
+  inputWithLeftIcon: {
+    paddingLeft: lightTheme.spacing.sm,
+  },
+  multilineInput: {
+    minHeight: 100,
     borderWidth: 0,
     outlineStyle: 'none',
     backgroundColor: 'transparent',
@@ -186,14 +150,13 @@ const styles = StyleSheet.create({
   leftIconWrapper: {
     marginRight: 8,
   },
-  rightIconWrapper: {
-    marginLeft: 8,
+  eyeIcon: {
+    padding: lightTheme.spacing.md,
   },
   errorText: {
-    textAlign: 'left',
-  },
-  hintText: {
-    textAlign: 'left',
+    ...lightTheme.typography.caption,
+    color: lightTheme.colors.status.emergency,
+    marginTop: lightTheme.spacing.xs,
   },
 });
 

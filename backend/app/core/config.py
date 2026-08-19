@@ -1,7 +1,6 @@
 """
-Configuration Management for NIVARA backend using pydantic-settings.
-Loads environment variables, database configuration, security parameters,
-and core application metadata.
+Application configuration loaded from environment variables.
+Uses pydantic-settings for type-safe, validated settings.
 """
 
 from functools import lru_cache
@@ -91,24 +90,14 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
     )
-
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
-        """Convert comma-separated CORS string to a list of origins if necessary."""
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",") if i.strip()]
-        elif isinstance(v, (list, str)):
-            return v
-        raise ValueError(f"Invalid CORS_ORIGINS format: {v}")
 
 
 @lru_cache()
 def get_settings() -> Settings:
-    """Singleton getter for application settings cached with LRU cache."""
+    """Returns the cached singleton Settings instance."""
     return Settings()
 
 
-settings: Settings = get_settings()
+settings = get_settings()

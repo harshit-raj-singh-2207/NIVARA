@@ -1,32 +1,67 @@
-/**
- * PreferenceCard.jsx
- * Remote sensory preference control card for caregivers.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View, Switch } from 'react-native';
+import { View, Text, StyleSheet, Switch } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { lightTheme } from '../../theme';
 import AppCard from '../common/AppCard';
-import { BRAND_COLORS } from '../../constants/colors';
-import { SPACING, BORDER_RADIUS } from '../../constants/spacing';
-import { FONT_SIZES, FONT_WEIGHTS } from '../../constants/typography';
 
-export const PreferenceCard = ({ title, description, value, onValueChange, icon = '⚙️' }) => {
+/**
+ * Caregiver UI Component.
+ * A card with a toggle switch to manage specific notification routing preferences.
+ *
+ * @param {Object} props
+ * @param {string} props.title - Title of the preference (e.g., "Geofence Alerts")
+ * @param {string} props.description - Detailed explanation (e.g., "Notify me when they leave a Safe Zone")
+ * @param {boolean} props.icon - Ionicons identifier
+ * @param {boolean} props.value - Current toggle state (true/false)
+ * @param {Function} props.onToggle - Callback when the switch is flipped
+ * @param {boolean} [props.disabled=false] - Disables the toggle temporarily (e.g. while syncing API)
+ */
+const PreferenceCard = ({ 
+  title, 
+  description, 
+  icon, 
+  value, 
+  onToggle, 
+  disabled = false 
+}) => {
   return (
-    <AppCard style={styles.card}>
-      <View style={styles.row}>
+    <AppCard style={[styles.card, disabled && styles.cardDisabled]} noPadding>
+      <View style={styles.container}>
+        
+        {/* Left Icon */}
         <View style={styles.iconContainer}>
-          <Text style={styles.icon}>{icon}</Text>
+          <Ionicons 
+            name={icon} 
+            size={24} 
+            color={disabled ? lightTheme.colors.text.tertiary : lightTheme.colors.primary} 
+          />
         </View>
+
+        {/* Center Text block */}
         <View style={styles.textContainer}>
-          <Text style={styles.title}>{title}</Text>
-          {description ? <Text style={styles.description}>{description}</Text> : null}
+          <Text style={[styles.title, disabled && styles.textDisabled]}>
+            {title}
+          </Text>
+          <Text style={[styles.description, disabled && styles.textDisabled]}>
+            {description}
+          </Text>
         </View>
-        <Switch
-          value={value}
-          onValueChange={onValueChange}
-          trackColor={{ false: '#CBD5E1', true: BRAND_COLORS.primaryLight }}
-          thumbColor={value ? BRAND_COLORS.primary : '#F8FAFC'}
-        />
+
+        {/* Right Toggle */}
+        <View style={styles.switchContainer}>
+          <Switch
+            trackColor={{ 
+              false: lightTheme.colors.border, 
+              true: lightTheme.colors.primaryLight 
+            }}
+            thumbColor={value ? lightTheme.colors.primary : '#f4f3f4'}
+            ios_backgroundColor={lightTheme.colors.surfaceHover}
+            onValueChange={onToggle}
+            value={value}
+            disabled={disabled}
+          />
+        </View>
+
       </View>
     </AppCard>
   );
@@ -34,38 +69,46 @@ export const PreferenceCard = ({ title, description, value, onValueChange, icon 
 
 const styles = StyleSheet.create({
   card: {
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
+    marginBottom: lightTheme.spacing.md,
   },
-  row: {
+  cardDisabled: {
+    opacity: 0.6,
+  },
+  container: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: lightTheme.spacing.md,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: BRAND_COLORS.primaryLight + '15',
-    alignItems: 'center',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: lightTheme.colors.surfaceHover,
     justifyContent: 'center',
-    marginRight: SPACING.md,
-  },
-  icon: {
-    fontSize: 20,
+    alignItems: 'center',
+    marginRight: lightTheme.spacing.md,
   },
   textContainer: {
     flex: 1,
-    paddingRight: SPACING.xs,
+    paddingRight: lightTheme.spacing.sm,
   },
   title: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: '#0F172A',
+    ...lightTheme.typography.body1,
+    fontWeight: '600',
+    color: lightTheme.colors.text.primary,
+    marginBottom: 4,
   },
   description: {
-    fontSize: FONT_SIZES.xs,
-    color: '#64748B',
-    marginTop: 2,
+    ...lightTheme.typography.caption,
+    color: lightTheme.colors.text.secondary,
+    lineHeight: 18,
+  },
+  textDisabled: {
+    color: lightTheme.colors.text.tertiary,
+  },
+  switchContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

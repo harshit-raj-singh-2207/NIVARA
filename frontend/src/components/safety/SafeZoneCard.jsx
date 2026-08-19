@@ -1,89 +1,64 @@
-/**
- * SafeZoneCard.jsx
- * Safe Zone / Geofence configuration card component.
- */
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, StyleSheet } from 'react-native';
+import AppCard from '../common/AppCard';
+import { lightTheme } from '../../theme/lightTheme';
 
-export const SafeZoneCard = ({ zone, onPress }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
-  if (!zone) return null;
-
+const SafeZoneCard = ({ currentZone, status }) => {
+  const isSafe = status === 'safe';
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={onPress}
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: zone.active ? colors.primary : colors.border,
-          borderRadius: borderRadius.md,
-          padding: 10,
-          marginBottom: 8,
-          ...shadows.small,
-        },
-      ]}
-    >
-      <View style={styles.leftRow}>
-        <Text style={{ fontSize: 20, marginRight: 8 }}>🏡</Text>
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              color: colors.text,
-              fontSize: typography.sizes.xs,
-              fontWeight: typography.weights.bold,
-            }}
-          >
-            {zone.name || 'Home Geofence Zone'}
-          </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2 }}>
-            Radius: {zone.radiusMeters || 500}m • Alert: Multi-Caregiver
-          </Text>
+    <AppCard>
+      <Text style={styles.title}>Safe Zones</Text>
+      <View style={styles.content}>
+        <View style={styles.iconContainer}>
+          <Text style={styles.icon}>{isSafe ? '📍' : '⚠️'}</Text>
         </View>
-
-        <View
-          style={[
-            styles.badge,
-            {
-              backgroundColor: zone.active ? colors.status.successBackground : colors.surface,
-              borderColor: zone.active ? colors.status.success : colors.border,
-              borderRadius: borderRadius.sm,
-              paddingHorizontal: 6,
-              paddingVertical: 2,
-            },
-          ]}
-        >
-          <Text
-            style={{
-              color: zone.active ? colors.status.success : colors.textMuted,
-              fontSize: 9,
-              fontWeight: 'bold',
-            }}
-          >
-            {zone.active ? 'ACTIVE' : 'INACTIVE'}
+        <View style={styles.textContainer}>
+          <Text style={styles.status}>
+            {isSafe ? 'You are inside a Safe Zone' : 'You have left the Safe Zone'}
           </Text>
+          <Text style={styles.zoneName}>{currentZone}</Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </AppCard>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
+  title: {
+    fontSize: lightTheme.typography.size.md,
+    color: lightTheme.colors.text.primary,
+    fontWeight: lightTheme.typography.weight.semiBold,
+    marginBottom: lightTheme.spacing.md,
   },
-  leftRow: {
+  content: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  badge: {
-    borderWidth: 1,
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: lightTheme.colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: lightTheme.spacing.md,
   },
+  icon: {
+    fontSize: 24,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  status: {
+    fontSize: lightTheme.typography.size.sm,
+    color: lightTheme.colors.text.secondary,
+    marginBottom: lightTheme.spacing.xs,
+  },
+  zoneName: {
+    fontSize: lightTheme.typography.size.md,
+    color: lightTheme.colors.text.primary,
+    fontWeight: lightTheme.typography.weight.semiBold,
+  }
 });
 
 export default SafeZoneCard;

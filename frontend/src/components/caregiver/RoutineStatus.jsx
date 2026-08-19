@@ -1,60 +1,157 @@
-/**
- * RoutineStatus.jsx
- * Active daily routine step and completion progress tracker card component.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { lightTheme } from '../../theme';
+import AppCard from '../common/AppCard';
+import Badge from '../common/Badge';
 
-export const RoutineStatus = ({ routine }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography } = theme;
+/**
+ * Caregiver UI Component.
+ * Displays the current expected routine of the tracked child compared to their actual location.
+ * Helps caregivers instantly understand if a routine deviation has occurred.
+ *
+ * @param {Object} props
+ * @param {Object} [props.currentRoutine] - The actively scheduled routine block
+ * @param {string} [props.currentRoutine.title] - e.g. "School", "Therapy"
+ * @param {string} [props.currentRoutine.timeRange] - e.g. "08:00 AM - 03:00 PM"
+ * @param {boolean} [props.isOnTrack=true] - Whether their GPS matches the expected location
+ */
+const RoutineStatus = ({ currentRoutine, isOnTrack = true }) => {
+  if (!currentRoutine) {
+    return (
+      <AppCard style={styles.card}>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="calendar-outline" size={32} color={lightTheme.colors.text.tertiary} />
+          <Text style={styles.emptyText}>No active routines scheduled right now.</Text>
+        </View>
+      </AppCard>
+    );
+  }
 
-  const activeTask = routine?.activeTaskTitle || 'Morning Hygiene & Bathing';
-  const progressPct = routine?.progressPercentage ?? 60;
-  const completed = routine?.completedCount ?? 3;
-  const total = routine?.totalCount ?? 5;
+  // Visual cues based on whether they are where they are supposed to be
+  const trackColor = isOnTrack ? lightTheme.colors.status.safe : lightTheme.colors.status.warning;
+  const trackIcon = isOnTrack ? 'checkmark-circle' : 'alert-circle';
+  const trackText = isOnTrack ? 'On Track' : 'Deviation Detected';
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: colors.border,
-          borderRadius: borderRadius.md,
-          padding: 10,
-          marginBottom: 8,
-        },
-      ]}
-    >
-      <View style={styles.headerRow}>
-        <Text style={{ fontSize: 18, marginRight: 6 }}>📋</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.text, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-            Active Routine Task
+    <AppCard style={styles.card} noPadding>
+      <View style={styles.header}>
+        <Ionicons name="calendar" size={20} color={lightTheme.colors.primary} />
+        <Text style={styles.headerTitle}>Current Routine</Text>
+        <Badge 
+          label={trackText} 
+          status={isOnTrack ? 'safe' : 'warning'} 
+          style={styles.badgeAlign} 
+        />
+      </View>
+
+      <View style={styles.content}>
+        
+        {/* Left: Routine Details */}
+        <View style={styles.detailsSection}>
+          <Text style={styles.routineTitle} numberOfLines={1}>
+            {currentRoutine.title}
           </Text>
-          <Text style={{ color: colors.primary, fontSize: 11, fontWeight: 'bold' }}>
-            {activeTask}
-          </Text>
+          <View style={styles.timeRow}>
+            <Ionicons name="time-outline" size={14} color={lightTheme.colors.text.secondary} />
+            <Text style={styles.timeText}>{currentRoutine.timeRange}</Text>
+          </View>
         </View>
 
-        <Text style={{ color: colors.text, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-          {completed}/{total} Steps ({progressPct}%)
-        </Text>
+        {/* Right: Deviation/Track Icon */}
+        <View style={styles.iconSection}>
+          <Ionicons name={trackIcon} size={32} color={trackColor} />
+        </View>
+
       </View>
-    </View>
+
+      {/* Warning Footer if off track */}
+      {!isOnTrack && (
+        <View style={styles.warningFooter}>
+          <Ionicons name="warning-outline" size={16} color={lightTheme.colors.status.warning} />
+          <Text style={styles.warningText}>
+            User is not at the expected location for this routine.
+          </Text>
+        </View>
+      )}
+    </AppCard>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    borderWidth: 1,
+  card: {
+    marginBottom: lightTheme.spacing.lg,
   },
-  headerRow: {
+  emptyContainer: {
+    padding: lightTheme.spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    ...lightTheme.typography.body2,
+    color: lightTheme.colors.text.secondary,
+    marginTop: lightTheme.spacing.sm,
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: lightTheme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: lightTheme.colors.border,
+    backgroundColor: lightTheme.colors.surfaceHover,
+  },
+  headerTitle: {
+    ...lightTheme.typography.h3,
+    color: lightTheme.colors.text.primary,
+    marginLeft: lightTheme.spacing.sm,
+    flex: 1,
+  },
+  badgeAlign: {
+    marginLeft: 'auto',
+  },
+  content: {
+    flexDirection: 'row',
+    padding: lightTheme.spacing.md,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  detailsSection: {
+    flex: 1,
+  },
+  routineTitle: {
+    ...lightTheme.typography.h3,
+    fontWeight: '700',
+    color: lightTheme.colors.text.primary,
+    marginBottom: 4,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timeText: {
+    ...lightTheme.typography.body2,
+    color: lightTheme.colors.text.secondary,
+    marginLeft: 4,
+  },
+  iconSection: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingLeft: lightTheme.spacing.md,
+  },
+  warningFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: lightTheme.colors.status.warningBg,
+    padding: lightTheme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(245, 158, 11, 0.2)', // Light amber border
+  },
+  warningText: {
+    ...lightTheme.typography.body2,
+    color: lightTheme.colors.status.warning,
+    marginLeft: lightTheme.spacing.sm,
+    fontWeight: '500',
+    flex: 1,
   },
 });
 

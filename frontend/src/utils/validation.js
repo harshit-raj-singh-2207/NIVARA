@@ -1,62 +1,94 @@
+import { GEOFENCE_CONFIG } from '../constants/config';
+
 /**
- * Form Validation Utilities for NIVARA frontend.
+ * Common validation utilities for forms and data input.
+ * Returns { isValid: boolean, error?: string } for strict checks, 
+ * or just a boolean for simple checks.
  */
 
-export const validateEmail = (email) => {
-  if (!email || !email.trim()) {
-    return 'Email address is required';
-  }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email.trim())) {
-    return 'Please enter a valid email address';
-  }
-  return null;
+/**
+ * Validates an email address format.
+ * @param {string} email
+ * @returns {boolean}
+ */
+export const isValidEmail = (email) => {
+  if (!email) return false;
+  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return re.test(String(email).toLowerCase());
 };
 
-export const validatePassword = (password) => {
-  if (!password) {
-    return 'Password is required';
-  }
-  if (password.length < 8) {
-    return 'Password must be at least 8 characters long';
-  }
-  return null;
+/**
+ * Validates a phone number (basic international/local fallback).
+ * Allows +, spaces, dashes, parentheses. Must have 7-15 digits.
+ * @param {string} phone
+ * @returns {boolean}
+ */
+export const isValidPhone = (phone) => {
+  if (!phone) return false;
+  const digitsOnly = phone.replace(/\D/g, '');
+  return digitsOnly.length >= 7 && digitsOnly.length <= 15;
 };
 
-export const validateFullName = (name) => {
-  if (!name || !name.trim()) {
-    return 'Full name is required';
+/**
+ * Validates an emergency contact payload.
+ * @param {Object} contact 
+ * @returns {{isValid: boolean, error?: string}}
+ */
+export const validateEmergencyContact = (contact) => {
+  if (!contact.name || contact.name.trim().length === 0) {
+    return { isValid: false, error: 'Name is required' };
   }
-  if (name.trim().length < 2) {
-    return 'Name must be at least 2 characters long';
+  
+  if (!isValidPhone(contact.phone)) {
+    return { isValid: false, error: 'Please enter a valid phone number' };
   }
-  return null;
+  
+  if (!contact.relationship || contact.relationship.trim().length === 0) {
+    return { isValid: false, error: 'Relationship is required' };
+  }
+
+  return { isValid: true };
 };
 
-export const validateCaregiverCode = (code) => {
-  if (!code || !code.trim()) {
-    return 'Caregiver code is required';
+/**
+ * Validates a safe zone payload before creation/update.
+ * @param {Object} zone 
+ * @returns {{isValid: boolean, error?: string}}
+ */
+export const validateSafeZone = (zone) => {
+  if (!zone.name || zone.name.trim().length === 0) {
+    return { isValid: false, error: 'Zone name is required' };
   }
-  const cleanCode = code.trim().toUpperCase();
-  if (!cleanCode.startsWith('CG-') && cleanCode.length < 6) {
-    return 'Invalid caregiver code format (e.g. CG-A1B2C3)';
+  
+  if (zone.radius < GEOFENCE_CONFIG.minRadius) {
+    return { isValid: false, error: `Radius must be at least ${GEOFENCE_CONFIG.minRadius}m` };
   }
-  return null;
+
+  if (zone.radius > GEOFENCE_CONFIG.maxRadius) {
+    return { isValid: false, error: `Radius cannot exceed ${(GEOFENCE_CONFIG.maxRadius / 1000).toFixed(1)}km` };
+  }
+
+  if (!isValidCoordinate(zone.latitude, zone.longitude)) {
+    return { isValid: false, error: 'Invalid map coordinates selected' };
+  }
+
+  return { isValid: true };
 };
 
-export const validatePhoneNumber = (phone) => {
-  if (!phone) return null; // Optional
-  const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
-  if (!phoneRegex.test(phone.trim())) {
-    return 'Please enter a valid phone number';
-  }
-  return null;
-};
+/**
+ * Checks if latitude and longitude are within valid Earth ranges.
+ * @param {number} lat 
+ * @param {number} lng 
+ * @returns {boolean}
+ */
+export const isValidCoordinate = (lat, lng) => {
+  if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+  if (isNaN(lat) || isNaN(lng)) return false;
+  if (lat < -90 || lat > 90) return false;
+  if (lng < -180 || lng > 180) return false;
+  
+  // Guard against standard dummy values like 0,0 being accidentally submitted without user intent
+  if (lat === 0 && lng === 0) return false;
 
-export default {
-  validateEmail,
-  validatePassword,
-  validateFullName,
-  validateCaregiverCode,
-  validatePhoneNumber,
+  return true;
 };

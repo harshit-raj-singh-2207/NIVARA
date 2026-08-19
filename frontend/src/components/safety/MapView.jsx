@@ -1,95 +1,129 @@
+import React, { useRef, useEffect } from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
+import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
+import { lightTheme } from '../../theme';
+
 /**
- * MapView.jsx
- * Embedded interactive GPS map viewer component showing real-time location and active safe zone boundaries.
+ * Reusable Map Component wrapping react-native-maps.
+ * Handles rendering the user's location pin and drawing Safe Zone boundaries.
+ *
+ * @param {Object} props
+ * @param {import('../../types/safety').LocationCoords} props.location - The main coordinate to center/pin
+ * @param {import('../../types/safety').SafeZone[]} [props.safeZones=[]] - Array of zones to draw
+ * @param {boolean} [props.scrollEnabled=true]
+ * @param {boolean} [props.zoomEnabled=true]
+ * @param {number} [props.height=200]
  */
+const AppMapView = ({
+  location,
+  safeZones = [],
+  scrollEnabled = true,
+  zoomEnabled = true,
+  height = 250,
+  style,
+}) => {
+  const mapRef = useRef(null);
 
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+  // Default to a wide view of user location or a fallback (e.g. Center of US/UK)
+  const initialRegion = {
+    latitude: location?.latitude || 37.7749,
+    longitude: location?.longitude || -122.4194,
+    latitudeDelta: 0.015, // Zoom level
+    longitudeDelta: 0.015,
+  };
 
-export const MapView = ({ location, safeZones = [], style }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
-
-  const lat = location?.latitude || 37.7749;
-  const lng = location?.longitude || -122.4194;
+  // Animate map to new location if it updates from the outside
+  useEffect(() => {
+    if (location && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        latitudeDelta: 0.015,
+        longitudeDelta: 0.015,
+      }, 1000);
+    }
+  }, [location]);
 
   return (
-    <View
-      style={[
-        styles.mapContainer,
-        {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: colors.border,
-          borderRadius: borderRadius.lg,
-          ...shadows.small,
-        },
-        style,
-      ]}
-    >
-      <View style={styles.gridOverlay}>
-        <Text style={{ fontSize: 36, marginBottom: 4 }}>🗺️</Text>
-        <Text
-          style={{
-            color: colors.text,
-            fontSize: typography.sizes.sm,
-            fontWeight: typography.weights.bold,
-          }}
-        >
-          GPS Map Satellite Radar
-        </Text>
-        <Text
-          style={{
-            color: colors.textSecondary,
-            fontSize: typography.sizes.xs,
-            marginTop: 2,
-          }}
-        >
-          Lat: {lat.toFixed(4)} • Lng: {lng.toFixed(4)}
-        </Text>
+    <View style={[styles.container, { height }, style]}>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        initialRegion={initialRegion}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        showsUserLocation={false} // We draw our own custom marker
+        showsMyLocationButton={false}
+        scrollEnabled={scrollEnabled}
+        zoomEnabled={zoomEnabled}
+        pitchEnabled={false}
+        toolbarEnabled={false}
+        // customMapStyle={customMapStyleJson} // Optional: Pass a generated JSON to match darkTheme/lightTheme
+      >
+        
+        {/* Render Safe Zones (Geofence Boundaries) */}
+        {safeZones.map((zone) => (
+          <Circle
+            key={zone.id}
+            center={{ latitude: zone.latitude, longitude: zone.longitude }}
+            radius={zone.radius}
+            strokeWidth={2}
+            strokeColor={lightTheme.colors.primary}
+            fillColor="rgba(14, 165, 233, 0.15)" // primary color with opacity
+          />
+        ))}
 
-        <View
-          style={[
-            styles.geofenceRing,
-            {
-              borderColor: colors.primary,
-              backgroundColor: 'rgba(99, 102, 241, 0.1)',
-              borderRadius: borderRadius.full,
-            },
-          ]}
-        >
-          <Text style={{ fontSize: 16 }}>📍</Text>
-          <Text style={{ color: colors.primary, fontSize: 10, fontWeight: 'bold' }}>
-            500m Safe Zone Boundary
-          </Text>
-        </View>
-      </View>
+        {/* Render Target User's Pin */}
+        {location && (
+          <Marker
+            coordinate={{
+              latitude: location.latitude,
+              longitude: location.longitude,
+            }}
+            anchor={{ x: 0.5, y: 0.5 }}
+          >
+            {/* Custom Marker UI - a pulsing dot or just a nice themed icon */}
+            <View style={styles.markerContainer}>
+              <View style={styles.markerInner}>
+                <Ionicons name="person" size={16} color="#fff" />
+              </View>
+            </View>
+          </Marker>
+        )}
+
+      </MapView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  mapContainer: {
-    height: 180,
+  container: {
     width: '100%',
-    overflow: 'hidden',
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: lightTheme.borderRadius.lg,
+    overflow: 'hidden', // Ensures map obeys border radius
+    backgroundColor: lightTheme.colors.surfaceHover,
   },
-  gridOverlay: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  map: {
+    ...StyleSheet.absoluteFillObject,
   },
-  geofenceRing: {
-    marginTop: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1.5,
-    flexDirection: 'row',
+  markerContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(14, 165, 233, 0.3)', // primary with opacity for glow effect
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
+  },
+  markerInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: lightTheme.colors.primary,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
-export default MapView;
+export default AppMapView;

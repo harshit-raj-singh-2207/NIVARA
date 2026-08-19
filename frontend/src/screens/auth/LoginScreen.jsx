@@ -1,216 +1,189 @@
-/**
- * LoginScreen.jsx
- * Complete, production-grade Login Screen for NIVARA AI-Powered Safety & Communication app.
- * Handles user/caregiver authentication with input validation, loading overlays, and error toasts.
- */
-
 import React, { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useTheme } from '../../theme';
-import { AUTH_ROUTES } from '../../constants/routes';
-import useAuthStore from '../../store/authStore';
-import authApi from '../../services/api/authApi';
-import { validateEmail, validatePassword } from '../../utils/validation';
-import { handleApiError } from '../../utils/errorHandler';
-import AppHeader from '../../components/common/AppHeader';
-import AppCard from '../../components/common/AppCard';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
 import AppInput from '../../components/common/AppInput';
 import AppButton from '../../components/common/AppButton';
-import Loading from '../../components/common/Loading';
+import { useAuth } from '../../hooks/useAuth';
+import { ROUTES } from '../../constants/routes';
+import { lightTheme } from '../../theme';
 
-export const LoginScreen = ({ navigation }) => {
-  const { theme } = useTheme();
-  const { colors, spacing, borderRadius, typography, shadows } = theme;
-
-  const { login, isLoading, error: authError, clearError } = useAuthStore();
-
+const LoginScreen = ({ navigation }) => {
+  const { login, isLoading, error } = useAuth();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState({});
 
-  const validateForm = () => {
-    const emailErr = validateEmail(email);
-    const passErr = validatePassword(password);
-
-    if (emailErr || passErr) {
-      setErrors({ email: emailErr, password: passErr });
-      return false;
-    }
-    setErrors({});
-    return true;
-  };
-
-  const handleLoginSubmit = async () => {
-    clearError();
-    if (!validateForm()) return;
-
-    try {
-      // Execute login via authStore which updates JWT tokens and sets isAuthenticated=true
-      await login(email.trim(), password);
-    } catch (err) {
-      handleApiError(err, 'Login Failed');
-    }
+  const handleLogin = async () => {
+    // Basic validation
+    if (!email.trim() || !password) return;
+    
+    const success = await login(email.trim(), password);
+    // Note: If success=true, the RootNavigator automatically switches to the App stack
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <AppHeader title="Sign In" subtitle="Welcome back to NIVARA Safety" />
-
-      {isLoading && <Loading overlay={true} size="large" message="Signing into your account..." />}
-
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { padding: spacing.lg }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaWrapper style={styles.container}>
+      <KeyboardAvoidingView 
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Brand Header & Tagline */}
-        <View style={styles.brandContainer}>
-          <Text style={[styles.brandLogo, { color: colors.primary }]}>🌌 NIVARA</Text>
-          <Text style={[styles.brandSubtitle, { color: colors.textSecondary, fontSize: typography.sizes.sm }]}>
-            AI-Powered Sensory Adaptation & Emergency Safety Platform
-          </Text>
-        </View>
-
-        {/* Login Form Card */}
-        <AppCard variant="elevated" style={[shadows.small, { marginBottom: spacing.lg }]}>
-          {authError ? (
-            <View style={[styles.errorBanner, { backgroundColor: colors.status.errorBackground }]}>
-              <Text style={{ color: colors.status.error, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-                ⚠️ {authError}
-              </Text>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Area */}
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="shield-checkmark" size={48} color={lightTheme.colors.primary} />
             </View>
-          ) : null}
+            <Text style={styles.title}>Welcome back</Text>
+            <Text style={styles.subtitle}>Enter your details to sign in to Nivara</Text>
+          </View>
 
-          {/* Email Address Input */}
-          <AppInput
-            label="Email Address"
-            placeholder="e.g. user@nivara.app"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              if (errors.email) setErrors((prev) => ({ ...prev, email: null }));
-              if (authError) clearError();
-            }}
-            error={errors.email}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          {/* Error Banner */}
+          {error && (
+            <View style={styles.errorBanner}>
+              <Ionicons name="alert-circle" size={20} color={lightTheme.colors.status.emergency} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
 
-          {/* Password Input */}
-          <AppInput
-            label="Password"
-            placeholder="••••••••"
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (errors.password) setErrors((prev) => ({ ...prev, password: null }));
-              if (authError) clearError();
-            }}
-            error={errors.password}
-            secureTextEntry={true}
-          />
+          {/* Form */}
+          <View style={styles.form}>
+            <AppInput
+              label="Email Address"
+              icon="mail-outline"
+              placeholder="you@example.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              editable={!isLoading}
+            />
+            
+            <AppInput
+              label="Password"
+              icon="lock-closed-outline"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              isPassword
+              autoComplete="password"
+              editable={!isLoading}
+            />
 
-          {/* Forgot Password Link */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => {
-              clearError();
-              navigation.navigate(AUTH_ROUTES.FORGOT_PASSWORD);
-            }}
-            style={styles.forgotBtn}
-          >
-            <Text
-              style={{
-                color: colors.primary,
-                fontSize: typography.sizes.xs,
-                fontWeight: typography.weights.bold,
-              }}
-            >
-              Forgot Password?
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.forgotPassword}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
 
-          {/* Login Submit Button */}
-          <AppButton
-            title="Sign In to Account"
-            onPress={handleLoginSubmit}
-            loading={isLoading}
-            variant="primary"
-            size="large"
-            fullWidth={true}
-            style={{ marginTop: spacing.xs }}
-          />
+            <AppButton
+              title="Sign In"
+              onPress={handleLogin}
+              isLoading={isLoading}
+              style={styles.loginButton}
+            />
+          </View>
 
-          {/* Switch to Registration */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => {
-              clearError();
-              navigation.navigate(AUTH_ROUTES.REGISTER);
-            }}
-            style={styles.registerSwitchRow}
-          >
-            <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.sm }}>
-              Don't have an account yet?{' '}
-              <Text style={{ color: colors.primary, fontWeight: typography.weights.bold }}>
-                Register Account
-              </Text>
-            </Text>
-          </TouchableOpacity>
-        </AppCard>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Don't have an account? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate(ROUTES.AUTH.REGISTER)} disabled={isLoading}>
+              <Text style={styles.linkText}>Create one</Text>
+            </TouchableOpacity>
+          </View>
+
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaWrapper>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: lightTheme.colors.background,
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingBottom: 40,
+    padding: lightTheme.spacing.xl,
   },
-  brandContainer: {
+  header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: lightTheme.spacing.xl,
+    marginTop: lightTheme.spacing.xl,
   },
-  brandLogo: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: 2,
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: lightTheme.colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: lightTheme.spacing.lg,
   },
-  brandSubtitle: {
+  title: {
+    ...lightTheme.typography.h1,
+    color: lightTheme.colors.text.primary,
+    marginBottom: lightTheme.spacing.xs,
+  },
+  subtitle: {
+    ...lightTheme.typography.body1,
+    color: lightTheme.colors.text.secondary,
     textAlign: 'center',
-    marginTop: 6,
-    paddingHorizontal: 16,
   },
   errorBanner: {
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  forgotBtn: {
-    alignSelf: 'flex-end',
-    marginBottom: 16,
-    marginTop: -4,
-  },
-  registerSwitchRow: {
-    marginTop: 20,
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: lightTheme.colors.status.emergencyBg,
+    padding: lightTheme.spacing.md,
+    borderRadius: lightTheme.borderRadius.md,
+    marginBottom: lightTheme.spacing.lg,
+  },
+  errorText: {
+    ...lightTheme.typography.body2,
+    color: lightTheme.colors.status.emergency,
+    marginLeft: lightTheme.spacing.sm,
+    flex: 1,
+  },
+  form: {
+    width: '100%',
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: lightTheme.spacing.xl,
+    marginTop: -lightTheme.spacing.sm,
+  },
+  forgotPasswordText: {
+    ...lightTheme.typography.body2,
+    color: lightTheme.colors.primary,
+    fontWeight: '600',
+  },
+  loginButton: {
+    marginBottom: lightTheme.spacing.xl,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 'auto',
+    paddingTop: lightTheme.spacing.xl,
+    paddingBottom: lightTheme.spacing.lg,
+  },
+  footerText: {
+    ...lightTheme.typography.body1,
+    color: lightTheme.colors.text.secondary,
+  },
+  linkText: {
+    ...lightTheme.typography.body1,
+    color: lightTheme.colors.primary,
+    fontWeight: '700',
   },
 });
 

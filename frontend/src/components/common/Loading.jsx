@@ -1,85 +1,51 @@
-/**
- * Accessible Reusable Loading Spinner & Overlay Component for NIVARA.
- */
-
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { lightTheme } from '../../theme';
 
-export const Loading = ({
-  size = 'large',
-  color,
-  message,
-  overlay = false,
-  style,
-  textStyle,
+/**
+ * Reusable Loading indicator.
+ * Supports a full-screen overlay mode or a local inline center mode.
+ * 
+ * @param {Object} props
+ * @param {boolean} [props.fullScreen=false] - If true, covers the entire parent via absolute positioning
+ * @param {string} [props.message] - Optional text to display under the spinner
+ * @param {string} [props.size='large'] - 'small' or 'large' (React Native ActivityIndicator size)
+ * @param {string} [props.color=lightTheme.colors.primary] - Custom color for the spinner
+ */
+const Loading = ({ 
+  fullScreen = false, 
+  message, 
+  size = 'large', 
+  color = lightTheme.colors.primary 
 }) => {
-  const { theme } = useTheme();
-  const { colors, spacing, typography } = theme;
-
-  const spinnerColor = color || colors.primary;
-
-  const content = (
-    <View
-      style={[
-        styles.container,
-        overlay && styles.overlayContainer,
-        { backgroundColor: overlay ? colors.overlay : 'transparent' },
-        style,
-      ]}
-      accessible={true}
-      accessibilityRole="progressbar"
-      accessibilityLabel={message || 'Loading content'}
-    >
-      <View
-        style={[
-          styles.innerBox,
-          overlay && {
-            backgroundColor: colors.surface,
-            borderRadius: theme.borderRadius.lg,
-            padding: spacing.lg,
-          },
-        ]}
-      >
-        <ActivityIndicator size={size} color={spinnerColor} />
-        {message && (
-          <Text
-            style={[
-              styles.message,
-              {
-                color: colors.text,
-                fontSize: typography.sizes.md,
-                fontWeight: typography.weights.medium,
-                marginTop: spacing.md,
-              },
-              textStyle,
-            ]}
-          >
-            {message}
-          </Text>
-        )}
-      </View>
+  return (
+    <View style={fullScreen ? styles.fullScreenContainer : styles.localContainer}>
+      <ActivityIndicator size={size} color={color} />
+      {message && (
+        <Text style={styles.messageText}>{message}</Text>
+      )}
     </View>
   );
-
-  return content;
 };
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  overlayContainer: {
+  fullScreenContainer: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 999,
-  },
-  innerBox: {
-    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent overlay
     justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
   },
-  message: {
+  localContainer: {
+    padding: lightTheme.spacing.xl,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1, // Will expand to fill local flex parent
+  },
+  messageText: {
+    ...lightTheme.typography.body2,
+    color: lightTheme.colors.text.secondary,
+    marginTop: lightTheme.spacing.md,
     textAlign: 'center',
   },
 });

@@ -1,30 +1,48 @@
 """
-Asynchronous MongoDB Database Manager for NIVARA backend using Motor and Beanie ODM.
-Manages async connection pools, database initialization, Beanie document registrations,
-health checks, and teardown logic for FastAPI application lifecycle.
+MongoDB database connection and dependency injection.
 """
 
-import asyncio
 import logging
-from typing import Any, List, Optional
+from typing import AsyncGenerator
+
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-
-class DatabaseManager:
-    """Singleton holding state for Motor AsyncIOMotorClient and Database instance."""
-
-    def __init__(self) -> None:
-        self.client: Optional[AsyncIOMotorClient] = None
-        self.db: Optional[AsyncIOMotorDatabase] = None
+_client: AsyncIOMotorClient | None = None
+_db: AsyncIOMotorDatabase | None = None
 
 
-db_manager = DatabaseManager()
+async def connect_db() -> None:
+    """Initialises the Motor MongoDB client and selects the application database."""
+    global _client, _db
+    _client = AsyncIOMotorClient(
+        settings.MONGODB_URL,
+        minPoolSize=settings.MONGODB_MIN_POOL_SIZE,
+        maxPoolSize=settings.MONGODB_MAX_POOL_SIZE,
+    )
+    _db = _client[settings.MONGODB_DB_NAME]
+    logger.info(f"Connected to MongoDB: {settings.MONGODB_DB_NAME}")
 
 
+async def disconnect_db() -> None:
+    """Closes the Motor MongoDB client."""
+    global _client
+    if _client:
+        _client.close()
+        logger.info("MongoDB connection closed.")
+
+
+def get_db() -> AsyncIOMotorDatabase:
+    """Returns the active database instance (used outside FastAPI dependency injection)."""
+    if _db is None:
+        raise RuntimeError("Database not connected. Call connect_db() first.")
+    return _db
+
+
+async def get_database() -> AsyncGenerator[AsyncIOMotorDatabase, None]:
 async def init_beanie_odm(database: AsyncIOMotorDatabase) -> None:
     """
     Registers Beanie ODM document models across all application domains.
@@ -165,27 +183,14 @@ close_mongo_connection = close_db
 
 def get_database() -> AsyncIOMotorDatabase:
     """
-    FastAPI dependency getter to retrieve the active AsyncIOMotorDatabase instance.
+    FastAPI dependency that yields the Motor database instance.
 
-    Raises:
-        RuntimeError: If database connection has not been initialized.
-    """
-    if db_manager.db is None:
-        raise RuntimeError(
-            "Database connection is uninitialized. Ensure 'init_db()' was invoked during app startup."
-        )
-    return db_manager.db
+    Usage::
 
-
-async def check_db_health() -> bool:
+        @router.get("/example")
+        async def example(db: AsyncIOMotorDatabase = Depends(get_database)):
+            ...
     """
-    Async helper function that pings the MongoDB instance and returns status (True / False).
-    """
-    if db_manager.client is None:
-        return False
-    try:
-        await db_manager.client.admin.command("ping")
-        return True
-    except Exception as e:
-        logger.warning(f"MongoDB health ping check failed: {e}")
-        return False
+    if _db is None:
+        raise RuntimeError("Database not initialised. Ensure lifespan startup has run.")
+    yield _db

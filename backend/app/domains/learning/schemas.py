@@ -8,21 +8,11 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
-class StepItem(BaseModel):
-    """Individual step item in a task breakdown."""
-    id: str = Field(..., description="Unique step identifier")
-    title: str = Field(..., description="Step instruction title")
-    description: Optional[str] = Field(default=None, description="Detailed visual instruction")
-    completed: bool = Field(default=False, description="Completion status flag")
-
-
-class TaskItem(BaseModel):
-    """Task item schema with nested step breakdown checklist."""
-    id: str = Field(..., description="Unique task identifier")
-    title: str = Field(..., description="Task title")
-    icon: Optional[str] = Field(default="📋", description="Task emoji icon")
-    time: Optional[str] = Field(default=None, description="Scheduled time string")
-    steps: List[StepItem] = Field(default_factory=list, description="Step breakdown checklist")
+class RoutineCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    steps: List[str] = []
+    schedule: Optional[str] = None
 
 
 class RoutineResponse(BaseModel):

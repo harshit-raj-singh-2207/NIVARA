@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import textToSpeech from '../../services/audio/textToSpeech';

@@ -1,63 +1,27 @@
-/**
- * SOSButton.jsx
- * Emergency SOS Panic Trigger button with press and hold-to-confirm mechanism.
- */
-
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
-import { STATUS_COLORS } from '../../constants/colors';
+import { Pressable, Text, StyleSheet, View } from 'react-native';
+import { lightTheme } from '../../theme/lightTheme';
 
-export const SOSButton = ({ onPress, onHoldConfirm, isTriggered = false }) => {
-  const { theme } = useTheme();
-  const { borderRadius, typography, shadows } = theme;
-
-  const [pressing, setPressing] = useState(false);
-
-  const handlePressIn = () => {
-    setPressing(true);
-  };
-
-  const handlePressOut = () => {
-    setPressing(false);
-  };
-
-  const handlePress = () => {
-    Alert.alert(
-      '🚨 Trigger Emergency SOS?',
-      'Hold the button for 2 seconds or tap Confirm to dispatch panic alerts to all linked caregivers.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'CONFIRM SOS',
-          style: 'destructive',
-          onPress: () => (onHoldConfirm ? onHoldConfirm() : onPress ? onPress() : null),
-        },
-      ]
-    );
-  };
+const SOSButton = ({ onPress }) => {
+  const [isPressed, setIsPressed] = useState(false);
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={[
-          styles.sosCircle,
-          {
-            backgroundColor: isTriggered ? STATUS_COLORS.error : '#DC2626',
-            borderRadius: 75,
-            ...shadows.large,
-            transform: [{ scale: pressing ? 0.96 : 1 }],
-          },
+      <Pressable
+        style={({ pressed }) => [
+          styles.button,
+          pressed && styles.buttonPressed
         ]}
+        onLongPress={onPress}
+        delayLongPress={1500}
+        onPressIn={() => setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
       >
-        <Text style={styles.sosEmoji}>🚨</Text>
-        <Text style={styles.sosText}>EMERGENCY</Text>
-        <Text style={styles.sosSubtext}>HOLD FOR SOS</Text>
-      </TouchableOpacity>
+        <Text style={styles.text}>SOS</Text>
+      </Pressable>
+      <Text style={[styles.helpText, { opacity: isPressed ? 1 : 0 }]}>
+        Hold for 1.5 seconds
+      </Text>
     </View>
   );
 };
@@ -65,34 +29,34 @@ export const SOSButton = ({ onPress, onHoldConfirm, isTriggered = false }) => {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 12,
+    marginVertical: lightTheme.spacing.xxl,
   },
-  sosCircle: {
+  button: {
+    backgroundColor: lightTheme.colors.status.emergency,
     width: 140,
     height: 140,
-    alignItems: 'center',
+    borderRadius: 70,
     justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: '#FFFFFF',
-    elevation: 8,
+    alignItems: 'center',
+    ...lightTheme.shadows.md,
+    borderWidth: 6,
+    borderColor: lightTheme.colors.status.emergencyBg,
   },
-  sosEmoji: {
-    fontSize: 32,
+  buttonPressed: {
+    transform: [{ scale: 0.95 }],
+    backgroundColor: '#dc2626',
   },
-  sosText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '900',
-    letterSpacing: 1,
-    marginTop: 2,
+  text: {
+    color: lightTheme.colors.text.inverse,
+    fontSize: lightTheme.typography.size.xxxl,
+    fontWeight: lightTheme.typography.weight.bold,
   },
-  sosSubtext: {
-    color: '#FEE2E2',
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 2,
-  },
+  helpText: {
+    marginTop: lightTheme.spacing.md,
+    color: lightTheme.colors.status.emergency,
+    fontSize: lightTheme.typography.size.sm,
+    fontWeight: lightTheme.typography.weight.medium,
+  }
 });
 
 export default SOSButton;

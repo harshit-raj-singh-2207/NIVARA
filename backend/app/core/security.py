@@ -1,143 +1,95 @@
 """
-Security Utilities for NIVARA backend.
-Handles JWT token generation, token verification, and password hashing using bcrypt and PyJWT.
+JWT token creation and verification utilities.
+Password hashing using bcrypt.
 """
 
-import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Union
-import bcrypt
-import jwt
+from typing import Any, Dict, Optional
+
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
-from app.core.constants import TokenType, UserRole
-from app.core.exceptions import InvalidTokenError, TokenExpiredError, UnauthorizedException
 
-logger = logging.getLogger(__name__)
-
-# Passlib fallback context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verifies a plain text password against a bcrypt hashed password."""
-    try:
-        pwd_bytes = plain_password.encode("utf-8")[:72]
-        hash_bytes = hashed_password.encode("utf-8")
-        return bcrypt.checkpw(pwd_bytes, hash_bytes)
-    except Exception:
-        try:
-            return pwd_context.verify(plain_password, hashed_password)
-        except Exception as e:
-            logger.error(f"Password verification error: {str(e)}")
-            return False
+# ─── Password Helpers ────────────────────────────────────────────────────────
+
+def hash_password(plain: str) -> str:
+    """Returns a bcrypt hash of the given plain-text password."""
+    return _pwd_context.hash(plain)
 
 
-def get_password_hash(password: str) -> str:
-    """Generates a secure bcrypt password hash."""
-    pwd_bytes = password.encode("utf-8")[:72]
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
+def verify_password(plain: str, hashed: str) -> bool:
+    """Returns True if the plain-text password matches the stored hash."""
+    return _pwd_context.verify(plain, hashed)
 
 
-def hash_password(password: str) -> str:
-    """Generates a secure bcrypt password hash (alias for get_password_hash)."""
-    return get_password_hash(password)
-
+# ─── JWT Helpers ─────────────────────────────────────────────────────────────
 
 def create_access_token(
-    subject: Union[str, Any],
-    role: Union[str, UserRole] = UserRole.PATIENT,
-    expires_delta: Optional[timedelta] = None,
+    subject: str,
     extra_claims: Optional[Dict[str, Any]] = None,
+    expires_delta: Optional[timedelta] = None,
 ) -> str:
     """
-    Creates a signed JWT access token using PyJWT.
-    
+    Creates a signed JWT access token.
+
     Args:
-        subject: Unique identifier of the user (e.g. user_id string)
-        role: User role (USER, CAREGIVER, ADMIN)
-        expires_delta: Optional custom token expiration duration
-        extra_claims: Optional custom dictionary of additional payload claims
+        subject: The ``sub`` claim — typically the user's string ID.
+        extra_claims: Additional claims to embed (e.g. ``role``, ``email``).
+        expires_delta: Custom expiry duration. Defaults to ``ACCESS_TOKEN_EXPIRE_MINUTES``.
     """
     now = datetime.now(timezone.utc)
-    if expires_delta:
-        expire = now + expires_delta
-    else:
-        expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-
-    role_str = role.value if isinstance(role, UserRole) else str(role)
-
+    expire = now + (
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
     payload: Dict[str, Any] = {
-        "sub": str(subject),
-        "role": role_str,
-        "type": TokenType.ACCESS.value,
-        "iat": int(now.timestamp()),
-        "exp": int(expire.timestamp()),
+        "sub": subject,
+        "iat": now,
+        "exp": expire,
+        "type": "access",
     }
-
     if extra_claims:
         payload.update(extra_claims)
-
-    encoded_jwt = jwt.encode(
-        payload,
-        settings.SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM,
-    )
-    return encoded_jwt
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
-def create_refresh_token(
-    subject: Union[str, Any],
-    role: Union[str, UserRole] = UserRole.PATIENT,
-    expires_delta: Optional[timedelta] = None,
-) -> str:
-    """
-    Creates a signed JWT refresh token for session renewal using PyJWT.
-    """
+def create_refresh_token(subject: str) -> str:
+    """Creates a longer-lived JWT refresh token."""
     now = datetime.now(timezone.utc)
-    if expires_delta:
-        expire = now + expires_delta
-    else:
-        expire = now + timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
-
-    role_str = role.value if isinstance(role, UserRole) else str(role)
-
-    payload: Dict[str, Any] = {
-        "sub": str(subject),
-        "role": role_str,
-        "type": TokenType.REFRESH.value,
-        "iat": int(now.timestamp()),
-        "exp": int(expire.timestamp()),
-    }
-
-    encoded_jwt = jwt.encode(
-        payload,
-        settings.SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM,
-    )
-    return encoded_jwt
+    expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    payload = {"sub": subject, "iat": now, "exp": expire, "type": "refresh"}
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
-def decode_token(token: str) -> Dict[str, Any]:
+def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
     """
-    Decodes and validates a JWT token signature and expiration.
+    Decodes and validates a JWT access token.
+
+    Returns:
+        The decoded payload dict, or None if the token is invalid / expired.
     """
     try:
         payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM],
+            token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
+        if payload.get("type") != "access":
+            return None
         return payload
-    except jwt.ExpiredSignatureError:
-        raise TokenExpiredError(message="JWT token has expired")
-    except jwt.PyJWTError as e:
-        logger.warning(f"Failed to decode JWT token: {str(e)}")
-        raise InvalidTokenError(message=f"Invalid JWT token signature or payload: {str(e)}")
+    except JWTError:
+        return None
 
 
-def decode_jwt_token(token: str) -> Dict[str, Any]:
-    """Decodes and validates a JWT token signature and expiration (alias for decode_token)."""
-    return decode_token(token)
+def decode_refresh_token(token: str) -> Optional[Dict[str, Any]]:
+    """Decodes and validates a JWT refresh token."""
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
+        if payload.get("type") != "refresh":
+            return None
+        return payload
+    except JWTError:
+        return None

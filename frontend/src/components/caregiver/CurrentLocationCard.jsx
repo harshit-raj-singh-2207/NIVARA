@@ -1,100 +1,160 @@
-/**
- * CurrentLocationCard.jsx
- * Live GPS coordinates & Geofence safe zone status card for caregiver monitoring.
- */
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { lightTheme } from '../../theme';
+import AppCard from '../common/AppCard';
+import AppMapView from '../safety/MapView';
+import { formatDateShort } from '../../utils/dateUtils';
 
-export const CurrentLocationCard = ({ location, onViewMap }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography, shadows } = theme;
+/**
+ * Caregiver UI Component.
+ * Displays the child's live location on a map with a text overlay of their last known address.
+ *
+ * @param {Object} props
+ * @param {import('../../types/safety').LocationRecord} props.location - The child's current GPS location
+ * @param {import('../../types/safety').SafeZone[]} [props.safeZones=[]] - Zones to draw on the map
+ */
+const CurrentLocationCard = ({ location, safeZones = [] }) => {
+  if (!location) {
+    return (
+      <AppCard style={styles.card}>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="location-outline" size={32} color={lightTheme.colors.text.tertiary} />
+          <Text style={styles.emptyText}>Waiting for location update...</Text>
+        </View>
+      </AppCard>
+    );
+  }
 
-  const address = location?.address || '124 Sensory Safe Haven, Innovation Hub, Tech City';
-  const isInside = location?.isInsideSafeZone ?? true;
-  const lastUpdated = location?.lastUpdated || 'Just now';
+  const timeString = location.timestamp ? `Updated ${formatDateShort(location.timestamp)}` : 'Live Tracking Active';
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surface,
-          borderColor: isInside ? colors.status.success : colors.status.error,
-          borderRadius: borderRadius.lg,
-          padding: 12,
-          marginBottom: 12,
-          ...shadows.small,
-        },
-      ]}
-    >
-      <View style={styles.headerRow}>
-        <Text style={{ fontSize: 22, marginRight: 8 }}>📍</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.text, fontSize: typography.sizes.sm, fontWeight: 'bold' }}>
-            Dependent Live GPS Location
-          </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: typography.sizes.xs, marginTop: 2 }}>
-            {address}
-          </Text>
+    <AppCard style={styles.card} noPadding>
+      {/* Map Area */}
+      <View style={styles.mapWrapper}>
+        <AppMapView 
+          location={location} 
+          safeZones={safeZones} 
+          height={220}
+          scrollEnabled={false} // Disable scroll so it acts like a clean card, user can open fullscreen elsewhere
+          zoomEnabled={false}
+        />
+        
+        {/* Live Badge Overlay */}
+        <View style={styles.liveBadge}>
+          <View style={styles.pulsingDot} />
+          <Text style={styles.liveText}>LIVE</Text>
+        </View>
+      </View>
+
+      {/* Info Area below the map */}
+      <View style={styles.infoContainer}>
+        <View style={styles.row}>
+          <Ionicons name="home" size={20} color={lightTheme.colors.primary} style={styles.icon} />
+          <View style={styles.textStack}>
+            <Text style={styles.addressTitle}>Current Location</Text>
+            <Text style={styles.addressText} numberOfLines={2}>
+              {location.address || `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`}
+            </Text>
+          </View>
         </View>
 
-        <TouchableOpacity
-          onPress={onViewMap}
-          style={[
-            styles.viewMapBtn,
-            {
-              backgroundColor: colors.primary,
-              borderRadius: borderRadius.md,
-            },
-          ]}
-        >
-          <Text style={{ color: '#FFFFFF', fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-            View Map
-          </Text>
-        </TouchableOpacity>
-      </View>
+        <Divider />
 
-      <View style={styles.footerRow}>
-        <Text
-          style={{
-            color: isInside ? colors.status.success : colors.status.error,
-            fontSize: 11,
-            fontWeight: 'bold',
-          }}
-        >
-          {isInside ? '✓ Inside Safe Zone Boundary' : '⚠️ OUTSIDE GEOFENCE ZONE!'}
-        </Text>
-        <Text style={{ color: colors.textMuted, fontSize: 10 }}>
-          Updated: {lastUpdated}
-        </Text>
+        <View style={styles.timeRow}>
+          <Ionicons name="time-outline" size={16} color={lightTheme.colors.text.secondary} />
+          <Text style={styles.timeText}>{timeString}</Text>
+        </View>
       </View>
-    </View>
+    </AppCard>
   );
 };
 
+// Internal minimal divider to avoid circular dependency issues if we didn't export Divider properly
+const Divider = () => <View style={styles.divider} />;
+
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 1.5,
+    overflow: 'hidden',
+    marginBottom: lightTheme.spacing.lg,
   },
-  headerRow: {
+  emptyContainer: {
+    padding: lightTheme.spacing.xl,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 150,
+  },
+  emptyText: {
+    ...lightTheme.typography.body1,
+    color: lightTheme.colors.text.secondary,
+    marginTop: lightTheme.spacing.sm,
+  },
+  mapWrapper: {
+    position: 'relative',
+    width: '100%',
+    height: 220,
+    backgroundColor: lightTheme.colors.surfaceHover,
+  },
+  liveBadge: {
+    position: 'absolute',
+    top: lightTheme.spacing.sm,
+    left: lightTheme.spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  viewMapBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    paddingHorizontal: 10,
-    marginLeft: 6,
+    borderRadius: lightTheme.borderRadius.round,
+    ...lightTheme.shadows.sm,
   },
-  footerRow: {
+  pulsingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: lightTheme.colors.status.emergency, // Red dot for 'LIVE'
+    marginRight: 4,
+  },
+  liveText: {
+    ...lightTheme.typography.caption,
+    fontWeight: '700',
+    color: lightTheme.colors.text.primary,
+  },
+  infoContainer: {
+    padding: lightTheme.spacing.md,
+  },
+  row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+  },
+  icon: {
+    marginRight: lightTheme.spacing.md,
+  },
+  textStack: {
+    flex: 1,
+  },
+  addressTitle: {
+    ...lightTheme.typography.body2,
+    fontWeight: '600',
+    color: lightTheme.colors.text.primary,
+    marginBottom: 2,
+  },
+  addressText: {
+    ...lightTheme.typography.body1,
+    color: lightTheme.colors.text.secondary,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: lightTheme.colors.border,
+    marginVertical: lightTheme.spacing.md,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timeText: {
+    ...lightTheme.typography.caption,
+    color: lightTheme.colors.text.secondary,
+    marginLeft: 4,
   },
 });
 

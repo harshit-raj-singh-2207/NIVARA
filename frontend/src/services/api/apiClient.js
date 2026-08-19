@@ -10,13 +10,15 @@ import { resetAndNavigate } from '../../navigation/navigationRef';
 import { parseApiError } from '../../utils/errorHandler';
 import { notifySessionExpired } from '../auth/sessionEvents';
 
-// Base Axios instance configuration
-export const apiClient = axios.create({
+/**
+ * Creates and configures the singleton Axios instance used for all network requests.
+ */
+const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
-    Accept: 'application/json',
+    'Accept': 'application/json',
   },
 });
 
@@ -49,21 +51,35 @@ const isAuthenticationFailure = (error) => {
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await secureStorage.getAccessToken();
+      const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
-    } catch (e) {
-      console.warn('Failed to retrieve access token from storage:', e);
+      
+      // Optional logging for dev mode
+      if (__DEV__) {
+        console.log(`[API Req] ${config.method?.toUpperCase()} ${config.url}`);
+      }
+      
+      return config;
+    } catch (error) {
+      // SecureStore read failure
+      return config;
     }
-    return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// Response Interceptor: Intercept 401 errors, queue concurrent requests, and handle automatic token refresh
+/**
+ * Response Interceptor
+ * Can handle global 401s (token expiry) to trigger logout via Zustand later.
+ */
 apiClient.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 

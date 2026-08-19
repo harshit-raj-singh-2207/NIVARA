@@ -1,9 +1,4 @@
-"""
-Learning Domain Beanie Document Models.
-Defines Routine, TaskBreakdown, and UserProgress documents.
-"""
-
-from datetime import datetime
+"""Learning domain models."""
 from typing import List, Optional
 from beanie import Document, Indexed
 from pydantic import BaseModel, Field

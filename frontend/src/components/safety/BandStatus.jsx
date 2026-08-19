@@ -1,54 +1,61 @@
-/**
- * BandStatus.jsx
- * Battery level and Bluetooth separation proximity indicator.
- */
-
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../../theme';
+import { View, Text, StyleSheet } from 'react-native';
+import AppCard from '../common/AppCard';
+import { lightTheme } from '../../theme/lightTheme';
 
-export const BandStatus = ({ batteryLevel = 88, signalStrength = -65, isSeparated = false }) => {
-  const { theme } = useTheme();
-  const { colors, borderRadius, typography } = theme;
-
-  const isLowBattery = batteryLevel < 20;
-
+const BandStatus = ({ isConnected, batteryLevel }) => {
   return (
-    <View style={styles.container}>
-      {/* Battery Indicator */}
-      <View style={styles.statItem}>
-        <Text style={{ fontSize: 16, marginRight: 4 }}>
-          {isLowBattery ? '🪫' : '🔋'}
-        </Text>
-        <Text style={{ color: isLowBattery ? colors.status.error : colors.text, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-          {batteryLevel}% Battery
-        </Text>
+    <AppCard style={styles.card}>
+      <View style={styles.row}>
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>GPS Band Status</Text>
+          <Text style={styles.statusText}>
+            {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+          </Text>
+        </View>
+        {isConnected && (
+          <View style={styles.batteryContainer}>
+            <Text style={styles.batteryText}>{batteryLevel}%</Text>
+          </View>
+        )}
       </View>
-
-      {/* Proximity / Separation Status */}
-      <View style={styles.statItem}>
-        <Text style={{ fontSize: 16, marginRight: 4 }}>
-          {isSeparated ? '⚠️' : '📡'}
-        </Text>
-        <Text style={{ color: isSeparated ? colors.status.error : colors.textSecondary, fontSize: typography.sizes.xs, fontWeight: 'bold' }}>
-          {isSeparated ? 'Band Separated!' : 'Proximity Safe'}
-        </Text>
-      </View>
-    </View>
+    </AppCard>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingVertical: 6,
+  card: {
+    padding: lightTheme.spacing.md,
   },
-  statItem: {
+  row: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
+  textContainer: {
+    flex: 1,
+  },
+  title: {
+    fontSize: lightTheme.typography.size.sm,
+    color: lightTheme.colors.text.secondary,
+    fontWeight: lightTheme.typography.weight.medium,
+    marginBottom: lightTheme.spacing.xs,
+  },
+  statusText: {
+    fontSize: lightTheme.typography.size.md,
+    color: lightTheme.colors.text.primary,
+    fontWeight: lightTheme.typography.weight.semiBold,
+  },
+  batteryContainer: {
+    backgroundColor: lightTheme.colors.status.safeBg,
+    paddingHorizontal: lightTheme.spacing.sm,
+    paddingVertical: lightTheme.spacing.xs,
+    borderRadius: lightTheme.borderRadius.sm,
+  },
+  batteryText: {
+    color: lightTheme.colors.status.safe,
+    fontWeight: lightTheme.typography.weight.bold,
+  }
 });
 
 export default BandStatus;

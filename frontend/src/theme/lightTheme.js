@@ -1,34 +1,17 @@
-/**
- * Light Theme Object for NIVARA.
- * Configured with PALETTE and THEME.light design tokens.
- */
-
-import { BRAND_COLORS, PALETTE, SENSORY_PALETTES, STATUS_COLORS, THEME } from '../constants/colors';
-import { BORDER_RADIUS, SPACING } from '../constants/spacing';
-import { FONT_SIZES, FONT_WEIGHTS } from '../constants/typography';
+import { colors } from '../constants/colors';
+import { typography } from '../constants/typography';
+import { spacing } from '../constants/spacing';
 
 export const lightTheme = {
-  mode: 'light',
-  colors: {
-    ...BRAND_COLORS,
-    ...SENSORY_PALETTES.light,
-    ...THEME.light,
-    primary: THEME.light.primary,
-    primaryLight: PALETTE.primary[100],
-    primaryDark: PALETTE.primary[900],
-    background: THEME.light.background,
-    surface: THEME.light.surface,
-    text: THEME.light.text,
-    textSecondary: THEME.light.subtext,
-    border: THEME.light.border,
-    status: STATUS_COLORS,
-    palette: PALETTE,
-  },
-  spacing: SPACING,
-  borderRadius: BORDER_RADIUS,
-  typography: {
-    sizes: FONT_SIZES,
-    weights: FONT_WEIGHTS,
+  colors: colors,
+  typography: typography,
+  spacing: spacing,
+  borderRadius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 24,
+    round: 9999,
   },
   shadows: {
     small: {
@@ -54,5 +37,3 @@ export const lightTheme = {
     },
   },
 };
-
-export default lightTheme;

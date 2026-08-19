@@ -11,14 +11,15 @@ import { resetAndNavigate } from '../navigation/navigationRef';
 import { registerSessionExpiredHandler } from '../services/auth/sessionEvents';
 
 export const useAuthStore = create((set, get) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true, // true on initial app boot for session restoration
-  isInitialized: false,
+  user: null,         // Object containing profile and { role: 'caregiver' | 'safety' }
+  token: null,        // JWT for API requests
+  isHydrating: true,  // True while loading from SecureStore on app launch
+  isLoading: false,   // True during login/register API calls
   error: null,
 
   /**
-   * Reads stored tokens and user profile on application launch to restore active session.
+   * Called during App Bootstrap (e.g. by a hook or RootNavigator).
+   * Reads SecureStore to re-authenticate the user without them logging in again.
    */
   restoreSession: async () => {
     set({ isLoading: true, error: null });
@@ -50,8 +51,8 @@ export const useAuthStore = create((set, get) => ({
     } catch (err) {
       console.warn('Session restoration failed:', err);
       await get().logout();
-      set({ isInitialized: true });
-      return false;
+    } finally {
+      set({ isHydrating: false });
     }
   },
 
@@ -145,37 +146,23 @@ export const useAuthStore = create((set, get) => ({
    * Clears stored tokens and user session data, resetting store state and navigating to LoginScreen.
    */
   logout: async () => {
-    set({ isLoading: true });
     try {
-      await secureStorage.clearAll();
-    } catch (err) {
-      console.warn('Error clearing tokens during logout:', err);
+      set({ isLoading: true });
+      await Promise.all([
+        SecureStore.deleteItemAsync(TOKEN_KEY),
+        SecureStore.deleteItemAsync(USER_ROLE_KEY),
+        SecureStore.deleteItemAsync(USER_PROFILE_KEY)
+      ]);
+      set({ token: null, user: null, error: null });
+    } catch (ignore) {
+      // Best effort cleanup
     } finally {
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        isInitialized: true,
-        error: null,
-      });
-      resetAndNavigate('LoginScreen');
+      set({ isLoading: false });
     }
   },
 
-  /**
-   * Dynamically updates current user account role (e.g. PATIENT vs CAREGIVER).
-   * @param {string} newRole - Role string ('PATIENT' | 'CAREGIVER')
-   */
-  updateUserRole: (newRole) => {
-    const { user } = get();
-    if (!user) return;
-
-    const updatedUser = { ...user, role: newRole.toUpperCase() };
-    secureStorage.setUserData(updatedUser);
-    set({ user: updatedUser });
-  },
-
-  clearError: () => set({ error: null }),
+  setLoading: (loading) => set({ isLoading: loading }),
+  setError: (error) => set({ error }),
 }));
 
 export default useAuthStore;
