@@ -89,3 +89,24 @@ export function playCommentSound() {
 export function playNotificationSound() {
   playSynthSound([659.25, 880.0, 1046.50], 0.32, 'sine');
 }
+
+/**
+ * High-priority separation alarm siren sound
+ */
+export function playSeparationAlarmSound() {
+  playSynthSound([880.0, 440.0, 880.0, 440.0, 987.77], 0.65, 'sawtooth');
+}
+
+/**
+ * Bluetooth Radar Ping sound
+ */
+export function playRadarPingSound() {
+  playSynthSound([1200.0, 1800.0], 0.12, 'sine');
+}
+
+/**
+ * Wearable Band Buzzer sound
+ */
+export function playBuzzerSound() {
+  playSynthSound([600.0, 600.0, 600.0], 0.40, 'square');
+}

@@ -278,6 +278,14 @@ export default function SafetyPrivacyCenterScreen({ navigation }) {
                   <Text style={styles.sidebarNavText}>Verification Status</Text>
                 </TouchableOpacity>
 
+                <TouchableOpacity
+                  style={styles.sidebarNavItem}
+                  onPress={() => navigation?.navigate?.('LiveLocation')}
+                >
+                  <Text style={styles.sidebarNavIcon}>📍</Text>
+                  <Text style={styles.sidebarNavText}>GPS & Live Map</Text>
+                </TouchableOpacity>
+
                 {/* Active Menu Item */}
                 <TouchableOpacity style={[styles.sidebarNavItem, styles.sidebarNavItemActive]}>
                   <Text style={[styles.sidebarNavIcon, styles.sidebarNavIconActive]}>🔒</Text>
@@ -394,6 +402,57 @@ export default function SafetyPrivacyCenterScreen({ navigation }) {
                       style={styles.mockupImage}
                       resizeMode="contain"
                     />
+                  </View>
+                </View>
+
+                {/* GPS & LOCATION TRACKING CARD */}
+                <View style={styles.sectionCard}>
+                  <View style={styles.sectionHeader}>
+                    <View style={[styles.sectionIconBadge, { backgroundColor: '#1E3A8A' }]}>
+                      <Text style={{ fontSize: 18 }}>📍</Text>
+                    </View>
+                    <View style={styles.sectionHeaderTextWrap}>
+                      <Text style={styles.sectionTitle}>Real-Time GPS & Live Location</Text>
+                      <Text style={styles.sectionSubtitle}>
+                        Live tracking map, breadcrumb history, multiple safe zones and telemetry.
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.divider} />
+
+                  <View style={{ paddingVertical: 8, gap: 12 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#10B981' }} />
+                        <Text style={{ color: '#F8FAFC', fontWeight: '700', fontSize: 14 }}>
+                          Child GPS SmartBand: Active (±3.2m)
+                        </Text>
+                      </View>
+                      <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
+                        <Text style={{ color: '#34D399', fontSize: 11, fontWeight: '700' }}>🛡️ In Safe Zone</Text>
+                      </View>
+                    </View>
+
+                    <Text style={{ color: '#94A3B8', fontSize: 12, lineHeight: 18 }}>
+                      Current location: 742 Evergreen Terrace (Near Courtyard). 5 active geofence boundaries monitored with instant boundary exit alerts.
+                    </Text>
+
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: '#2563EB',
+                        paddingVertical: 12,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        marginTop: 4,
+                      }}
+                      onPress={() => navigation?.navigate?.('LiveLocation')}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '800' }}>
+                        🗺️ Launch Live Map & GPS Command Center
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
 

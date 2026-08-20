@@ -636,6 +636,14 @@ export default function CommunityHomeScreen({ navigation }) {
 
           <TouchableOpacity
             style={styles.navItem}
+            onPress={() => navigation.navigate('LiveLocation')}
+          >
+            <Text style={styles.navIcon}>📍</Text>
+            <Text style={styles.navLabel}>GPS & Live Map</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navItem}
             onPress={() => navigation.navigate('SafetyPrivacyCenter')}
           >
             <Text style={styles.navIcon}>🛡️</Text>

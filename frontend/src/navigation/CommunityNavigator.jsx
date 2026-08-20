@@ -23,12 +23,39 @@ import SupportCenterScreen from '../screens/caregiver/SupportCenterScreen';
 import ActiveGroupsScreen from '../screens/community/ActiveGroupsScreen';
 import SafetyPrivacyCenterScreen from '../screens/caregiver/SafetyPrivacyCenterScreen';
 
+import CaregiverDashboard from '../screens/caregiver/CaregiverDashboard';
+import ChildProfileScreen from '../screens/caregiver/ChildProfileScreen';
+import ChildStatusScreen from '../screens/caregiver/ChildStatusScreen';
+import DeviceStatusScreen from '../screens/caregiver/DeviceStatusScreen';
+import SafetyOverviewScreen from '../screens/caregiver/SafetyOverviewScreen';
+import LiveLocationScreen from '../screens/safety/LiveLocationScreen';
+import SafeZonesScreen from '../screens/safety/SafeZonesScreen';
+import AddSafeZoneScreen from '../screens/safety/AddSafeZoneScreen';
+import GPSBandScreen from '../screens/safety/GPSBandScreen';
+import SafetyHomeScreen from '../screens/safety/SafetyHomeScreen';
+import EmergencyScreen from '../screens/safety/EmergencyScreen';
+import EmergencyContactsScreen from '../screens/safety/EmergencyContactsScreen';
+import SafetyEventDetailsScreen from '../screens/safety/SafetyEventDetailsScreen';
+
 const Stack = createNativeStackNavigator();
 
 export default function CommunityNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="CommunityHome">
       <Stack.Screen name="CommunityHome" component={CommunityHomeScreen} />
+      <Stack.Screen name="CaregiverDashboard" component={CaregiverDashboard} />
+      <Stack.Screen name="LiveLocation" component={LiveLocationScreen} />
+      <Stack.Screen name="SafeZones" component={SafeZonesScreen} />
+      <Stack.Screen name="AddSafeZone" component={AddSafeZoneScreen} />
+      <Stack.Screen name="GPSBand" component={GPSBandScreen} />
+      <Stack.Screen name="SafetyHome" component={SafetyHomeScreen} />
+      <Stack.Screen name="Emergency" component={EmergencyScreen} />
+      <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} />
+      <Stack.Screen name="SafetyEventDetails" component={SafetyEventDetailsScreen} />
+      <Stack.Screen name="ChildProfile" component={ChildProfileScreen} />
+      <Stack.Screen name="ChildStatus" component={ChildStatusScreen} />
+      <Stack.Screen name="DeviceStatus" component={DeviceStatusScreen} />
+      <Stack.Screen name="SafetyOverview" component={SafetyOverviewScreen} />
       <Stack.Screen name="ProgramRunner" component={ProgramRunnerScreen} />
       <Stack.Screen name="ChatList" component={ChatListScreen} />
       <Stack.Screen name="DirectMessage" component={DirectMessageScreen} />
@@ -51,4 +78,3 @@ export default function CommunityNavigator() {
     </Stack.Navigator>
   );
 }
-
